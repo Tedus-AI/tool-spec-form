@@ -15,7 +15,7 @@
   }
   .top-bar {
     background: #1A1A1A;
-    padding: 16px 24px;
+    padding: 12px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -27,6 +27,7 @@
     color: #FFF;
     font-size: 18px;
     font-weight: 700;
+    white-space: nowrap;
   }
   .top-bar-right {
     display: flex;
@@ -65,55 +66,55 @@
     background: #E8725A30;
     color: #E8725A;
   }
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px 16px 80px;
-  }
 
-  /* Form selector */
-  .form-selector {
-    background: #FFF;
-    border: 2px solid #E8E8E8;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 24px;
-    position: relative;
-  }
-  .form-selector-header {
-    display: flex;
+  /* Tool Switcher Bar - sticky below top bar */
+  .tool-switcher-bar {
+    background: #252525;
+    padding: 10px 24px;
+    display: none;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+    gap: 10px;
+    position: sticky;
+    top: 50px;
+    z-index: 99;
+    border-bottom: 1px solid #333;
   }
-  .form-selector-header .field-label {
-    margin-bottom: 0;
-  }
-  .form-selector-actions {
+  .tool-switcher-bar.show {
     display: flex;
-    gap: 8px;
   }
-  .form-selector select {
-    width: 100%;
-    border: 1px solid #E0E0E0;
+  .tool-switcher-bar .switcher-label {
+    color: #AAA;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  .tool-switcher-bar select {
+    flex: 1;
+    max-width: 400px;
+    border: 1px solid #444;
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: 8px 36px 8px 12px;
     font-size: 14px;
     font-family: inherit;
-    color: #333;
-    background: #FAFAFA;
+    font-weight: 600;
+    color: #FFF;
+    background: #333;
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23999'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23AAA'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
+    background-position: right 12px center;
+    transition: border-color 0.2s;
   }
-  .form-selector select:focus {
+  .tool-switcher-bar select:focus {
     border-color: #2D9B6E;
     outline: none;
-    background-color: #FFF;
+  }
+  .tool-switcher-bar select option {
+    background: #333;
+    color: #FFF;
   }
   .btn-small {
     padding: 6px 14px;
@@ -131,20 +132,21 @@
   }
   .btn-new:hover { background: #258C5F; }
   .btn-delete {
-    background: #FFF;
+    background: transparent;
     color: #E8725A;
     border: 1px solid #E8725A;
   }
-  .btn-delete:hover { background: #FFF0ED; }
-  .form-selector-info {
-    font-size: 11px;
-    color: #999;
-    margin-top: 8px;
+  .btn-delete:hover { background: #E8725A20; }
+  .tool-switcher-meta {
+    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
   }
-  .form-selector-info .dot {
+  .tool-switcher-meta .dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
@@ -152,6 +154,29 @@
   }
   .dot-connected { background: #2D9B6E; }
   .dot-disconnected { background: #E8725A; }
+
+  /* Settings gear button */
+  .settings-btn {
+    background: transparent;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #888;
+    font-size: 16px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .settings-btn:hover {
+    border-color: #2D9B6E;
+    color: #2D9B6E;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+  }
 
   /* Firebase config panel */
   .firebase-config-panel {
@@ -572,8 +597,14 @@
   @media (max-width: 480px) {
     .radio-group { flex-direction: column; }
     .radio-option { min-width: unset; }
-    .form-selector-header { flex-direction: column; gap: 10px; align-items: flex-start; }
     .top-bar { flex-wrap: wrap; gap: 8px; }
+    .tool-switcher-bar {
+      flex-wrap: wrap;
+      padding: 8px 16px;
+      gap: 8px;
+    }
+    .tool-switcher-bar select { max-width: 100%; min-width: 0; }
+    .tool-switcher-meta { width: 100%; margin-left: 0; }
   }
 </style>
 </head>
@@ -583,13 +614,28 @@
   <h1>工具開發規格表</h1>
   <div class="top-bar-right">
     <span class="save-indicator" id="save-indicator"></span>
-    <span class="badge">STANDARD FLOW</span>
+    <button class="settings-btn" onclick="toggleFirebaseConfig()" title="Firebase 設定">&#9881;</button>
+  </div>
+</div>
+
+<!-- Tool Switcher Bar (sticky, always visible when connected) -->
+<div class="tool-switcher-bar" id="tool-switcher-bar">
+  <span class="switcher-label">切換工具</span>
+  <select id="form-dropdown" onchange="onFormSelect()">
+    <option value="">-- 選擇開發工具 --</option>
+  </select>
+  <button class="btn-small btn-new" onclick="createNewForm()">+ 新增</button>
+  <button class="btn-small btn-delete" id="delete-form-btn" onclick="showDeleteModal()" style="display:none">刪除</button>
+  <div class="tool-switcher-meta">
+    <span class="dot" id="connection-dot"></span>
+    <span id="connection-text"></span>
+    <span id="last-saved-time"></span>
   </div>
 </div>
 
 <div class="container">
 
-  <!-- Firebase Config Panel -->
+  <!-- Firebase Config Panel (hidden by default, toggle via gear icon) -->
   <div class="firebase-config-panel" id="firebase-config-panel">
     <div class="firebase-toggle" onclick="toggleFirebaseConfig()">
       <div class="field-label" style="margin-bottom:0">Firebase 資料庫設定</div>
@@ -627,25 +673,6 @@
       </label>
       <button class="firebase-save-btn" onclick="connectFirebase()">連接 Firebase</button>
       <div class="firebase-status" id="firebase-status"></div>
-    </div>
-  </div>
-
-  <!-- Form Selector Dropdown -->
-  <div class="form-selector" id="form-selector" style="display:none">
-    <div class="form-selector-header">
-      <div class="field-label">選擇表單</div>
-      <div class="form-selector-actions">
-        <button class="btn-small btn-new" onclick="createNewForm()">+ 新增表單</button>
-        <button class="btn-small btn-delete" id="delete-form-btn" onclick="showDeleteModal()" style="display:none">刪除</button>
-      </div>
-    </div>
-    <select id="form-dropdown" onchange="onFormSelect()">
-      <option value="">-- 請選擇或新增表單 --</option>
-    </select>
-    <div class="form-selector-info">
-      <span class="dot" id="connection-dot"></span>
-      <span id="connection-text"></span>
-      <span id="last-saved-time" style="margin-left:auto;"></span>
     </div>
   </div>
 
@@ -946,10 +973,26 @@ let formListCache = [];
 
 // ===== Firebase Connection =====
 function toggleFirebaseConfig() {
+  const panel = document.getElementById('firebase-config-panel');
   const fields = document.getElementById('firebase-config-fields');
   const icon = document.getElementById('firebase-toggle-icon');
-  fields.classList.toggle('show');
-  icon.classList.toggle('open');
+  // Toggle panel visibility
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    fields.classList.add('show');
+    icon.classList.add('open');
+  } else if (fields.classList.contains('show')) {
+    // If fields are open, close them and hide panel
+    fields.classList.remove('show');
+    icon.classList.remove('open');
+    // If already connected, hide the entire panel
+    if (firebaseConnected) {
+      setTimeout(() => { panel.style.display = 'none'; }, 300);
+    }
+  } else {
+    fields.classList.add('show');
+    icon.classList.add('open');
+  }
 }
 
 function getFirebaseConfig() {
@@ -988,22 +1031,33 @@ function connectFirebase() {
         saveFirebaseConfig(config);
       }
 
-      // Show form selector & load forms
-      document.getElementById('form-selector').style.display = 'block';
+      // Show tool switcher bar & load forms
+      document.getElementById('tool-switcher-bar').classList.add('show');
       loadFormList();
 
-      // Collapse config panel after successful connection
+      // Collapse & hide config panel after successful connection
       setTimeout(() => {
         document.getElementById('firebase-config-fields').classList.remove('show');
         document.getElementById('firebase-toggle-icon').classList.remove('open');
+        document.getElementById('firebase-config-panel').style.display = 'none';
       }, 1500);
 
     }).catch(err => {
       showFirebaseStatus('error', '連接失敗：' + err.message);
       updateConnectionIndicator(false);
+      // Show config panel if connection fails
+      const panel = document.getElementById('firebase-config-panel');
+      panel.style.display = 'block';
+      document.getElementById('firebase-config-fields').classList.add('show');
+      document.getElementById('firebase-toggle-icon').classList.add('open');
     });
   } catch (e) {
     showFirebaseStatus('error', '初始化失敗：' + e.message);
+    // Show config panel if initialization fails
+    const panel = document.getElementById('firebase-config-panel');
+    panel.style.display = 'block';
+    document.getElementById('firebase-config-fields').classList.add('show');
+    document.getElementById('firebase-toggle-icon').classList.add('open');
   }
 }
 
@@ -1033,6 +1087,9 @@ function loadFirebaseConfig() {
     document.getElementById('fb-appId').value = config.appId || '';
     document.getElementById('fb-remember').checked = true;
 
+    // Hide config panel during auto-connect (it will stay hidden on success)
+    document.getElementById('firebase-config-panel').style.display = 'none';
+
     // Auto-connect
     setTimeout(() => connectFirebase(), 300);
   } catch(e) { /* ignore parse errors */ }
@@ -1061,7 +1118,7 @@ async function loadFormList() {
     formListCache = [];
     const dropdown = document.getElementById('form-dropdown');
     // Keep the first placeholder option
-    dropdown.innerHTML = '<option value="">-- 請選擇或新增表單 --</option>';
+    dropdown.innerHTML = '<option value="">-- 選擇開發工具 --</option>';
 
     snapshot.forEach(doc => {
       const data = doc.data();
