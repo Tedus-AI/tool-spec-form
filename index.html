@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工具開發規格填寫表</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans TC', -apple-system, sans-serif;
+    background: #F7F5F2;
+    color: #1A1A1A;
+    min-height: 100vh;
+  }
+  .top-bar {
+    background: #1A1A1A;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .top-bar h1 {
+    color: #FFF;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .top-bar .badge {
+    background: #2D9B6E;
+    color: #FFF;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+  .save-indicator {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    display: none;
+  }
+  .save-indicator.saving {
+    display: inline-block;
+    background: #2E86C130;
+    color: #7EC8E3;
+  }
+  .save-indicator.saved {
+    display: inline-block;
+    background: #2D9B6E30;
+    color: #5ECE9B;
+  }
+  .save-indicator.error {
+    display: inline-block;
+    background: #E8725A30;
+    color: #E8725A;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+  }
+
+  /* Form selector */
+  .form-selector {
+    background: #FFF;
+    border: 2px solid #E8E8E8;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .form-selector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .form-selector-header .field-label {
+    margin-bottom: 0;
+  }
+  .form-selector-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .form-selector select {
+    width: 100%;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #333;
+    background: #FAFAFA;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23999'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .form-selector select:focus {
+    border-color: #2D9B6E;
+    outline: none;
+    background-color: #FFF;
+  }
+  .btn-small {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-new {
+    background: #2D9B6E;
+    color: #FFF;
+  }
+  .btn-new:hover { background: #258C5F; }
+  .btn-delete {
+    background: #FFF;
+    color: #E8725A;
+    border: 1px solid #E8725A;
+  }
+  .btn-delete:hover { background: #FFF0ED; }
+  .form-selector-info {
+    font-size: 11px;
+    color: #999;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .form-selector-info .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot-connected { background: #2D9B6E; }
+  .dot-disconnected { background: #E8725A; }
+
+  /* Firebase config panel */
+  .firebase-config-panel {
+    background: #1A1A1A;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .firebase-config-panel .field-label { color: #FFF; }
+  .firebase-config-panel .field-hint { color: #888; }
+  .firebase-config-panel input {
+    background: #2A2A2A;
+    border-color: #444;
+    color: #FFF;
+  }
+  .firebase-config-panel input:focus {
+    border-color: #2D9B6E;
+    background: #333;
+  }
+  .firebase-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .firebase-toggle-icon {
+    font-size: 14px;
+    color: #888;
+    transition: transform 0.3s;
+  }
+  .firebase-toggle-icon.open { transform: rotate(180deg); }
+  .firebase-config-fields {
+    display: none;
+    margin-top: 16px;
+  }
+  .firebase-config-fields.show { display: block; }
+  .firebase-config-fields .config-row {
+    margin-bottom: 10px;
+  }
+  .firebase-config-fields .config-row label {
+    display: block;
+    font-size: 12px;
+    color: #AAA;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .firebase-config-fields input {
+    width: 100%;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .firebase-save-btn {
+    margin-top: 12px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #2D9B6E;
+    color: #FFF;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+  }
+  .firebase-save-btn:hover { background: #258C5F; }
+  .firebase-status {
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 32px;
+    padding: 0 4px;
+  }
+  .progress-step {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: #DDD;
+    transition: background 0.4s ease;
+  }
+  .progress-step.done { background: #2D9B6E; }
+  .progress-step.active { background: #E8725A; }
+  /* Phase sections */
+  .phase-section {
+    margin-bottom: 28px;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .phase-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFF;
+    font-size: 18px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .phase-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .phase-name {
+    font-size: 22px;
+    font-weight: 800;
+  }
+  /* Form elements */
+  .field-group {
+    background: #FFF;
+    border: 1px solid #E8E8E8;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s ease;
+  }
+  .field-group:focus-within {
+    border-color: #2D9B6E;
+    box-shadow: 0 0 0 3px rgba(45,155,110,0.08);
+  }
+  .field-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1A1A1A;
+    margin-bottom: 4px;
+  }
+  .field-hint {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 10px;
+  }
+  input[type="text"],
+  textarea,
+  select {
+    width: 100%;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #333;
+    background: #FAFAFA;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: #2D9B6E;
+    background: #FFF;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+  .radio-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .radio-option {
+    flex: 1;
+    min-width: 120px;
+  }
+  .radio-option input { display: none; }
+  .radio-option label {
+    display: block;
+    padding: 10px 16px;
+    border: 2px solid #E5E5E5;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .radio-option input:checked + label {
+    border-color: #2D9B6E;
+    background: #EDFAF3;
+    color: #2D9B6E;
+  }
+  /* Feature list builder */
+  .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .feature-item .num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #F0F0F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    flex-shrink: 0;
+  }
+  .feature-item input { flex: 1; }
+  .feature-item .remove-feature-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid #E0E0E0;
+    background: #FFF;
+    color: #CCC;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .feature-item .remove-feature-btn:hover {
+    border-color: #E8725A;
+    color: #E8725A;
+    background: #FFF0ED;
+  }
+  .add-feature-btn {
+    margin-top: 8px;
+    padding: 8px 16px;
+    border: 1px dashed #CCC;
+    border-radius: 8px;
+    background: transparent;
+    color: #999;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-feature-btn:hover {
+    border-color: #2D9B6E;
+    color: #2D9B6E;
+  }
+  /* Navigation */
+  .nav-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 24px;
+    gap: 12px;
+  }
+  .btn {
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-secondary {
+    background: #FFF;
+    border: 1px solid #DDD;
+    color: #666;
+  }
+  .btn-primary {
+    background: #2D9B6E;
+    color: #FFF;
+  }
+  .btn-primary:hover { background: #258C5F; }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  /* GitHub config section */
+  .github-config {
+    background: #1A1A1A;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .github-config .field-label { color: #FFF; }
+  .github-config .field-hint { color: #888; }
+  .github-config input {
+    background: #2A2A2A;
+    border-color: #444;
+    color: #FFF;
+  }
+  .github-config input:focus {
+    border-color: #2D9B6E;
+    background: #333;
+  }
+  /* Preview */
+  .preview-box {
+    background: #1A1A1A;
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .preview-box pre {
+    color: #DDD;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+  /* Status messages */
+  .status-msg {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 12px;
+    display: none;
+  }
+  .status-msg.success {
+    display: block;
+    background: #EDFAF3;
+    color: #2D9B6E;
+    border: 1px solid #2D9B6E30;
+  }
+  .status-msg.error {
+    display: block;
+    background: #FFF0ED;
+    color: #E8725A;
+    border: 1px solid #E8725A30;
+  }
+  .status-msg.loading {
+    display: block;
+    background: #EDF5FC;
+    color: #2E86C1;
+    border: 1px solid #2E86C130;
+  }
+  /* Copy button */
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #333;
+    color: #CCC;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: #444; }
+  .preview-wrapper {
+    position: relative;
+  }
+
+  /* Delete confirmation modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show {
+    display: flex;
+  }
+  .modal-box {
+    background: #FFF;
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+  }
+  .modal-box h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .modal-box p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .modal-actions .btn {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .radio-group { flex-direction: column; }
+    .radio-option { min-width: unset; }
+    .form-selector-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .top-bar { flex-wrap: wrap; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>工具開發規格表</h1>
+  <div class="top-bar-right">
+    <span class="save-indicator" id="save-indicator"></span>
+    <span class="badge">STANDARD FLOW</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Firebase Config Panel -->
+  <div class="firebase-config-panel" id="firebase-config-panel">
+    <div class="firebase-toggle" onclick="toggleFirebaseConfig()">
+      <div class="field-label" style="margin-bottom:0">Firebase 資料庫設定</div>
+      <span class="firebase-toggle-icon" id="firebase-toggle-icon">&#9660;</span>
+    </div>
+    <div class="firebase-config-fields" id="firebase-config-fields">
+      <div class="field-hint">填入 Firebase 專案資訊，啟用即時儲存功能</div>
+      <div class="config-row">
+        <label>API Key</label>
+        <input type="text" id="fb-apiKey" placeholder="AIzaSy...">
+      </div>
+      <div class="config-row">
+        <label>Auth Domain</label>
+        <input type="text" id="fb-authDomain" placeholder="your-project.firebaseapp.com">
+      </div>
+      <div class="config-row">
+        <label>Project ID</label>
+        <input type="text" id="fb-projectId" placeholder="your-project-id">
+      </div>
+      <div class="config-row">
+        <label>Storage Bucket</label>
+        <input type="text" id="fb-storageBucket" placeholder="your-project.appspot.com">
+      </div>
+      <div class="config-row">
+        <label>Messaging Sender ID</label>
+        <input type="text" id="fb-messagingSenderId" placeholder="123456789">
+      </div>
+      <div class="config-row">
+        <label>App ID</label>
+        <input type="text" id="fb-appId" placeholder="1:123456789:web:abc123">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:12px">
+        <input type="checkbox" id="fb-remember" style="width:16px;height:16px;accent-color:#2D9B6E;cursor:pointer;">
+        <span style="font-size:12px;color:#AAA">記住 Firebase 設定（儲存在此瀏覽器）</span>
+      </label>
+      <button class="firebase-save-btn" onclick="connectFirebase()">連接 Firebase</button>
+      <div class="firebase-status" id="firebase-status"></div>
+    </div>
+  </div>
+
+  <!-- Form Selector Dropdown -->
+  <div class="form-selector" id="form-selector" style="display:none">
+    <div class="form-selector-header">
+      <div class="field-label">選擇表單</div>
+      <div class="form-selector-actions">
+        <button class="btn-small btn-new" onclick="createNewForm()">+ 新增表單</button>
+        <button class="btn-small btn-delete" id="delete-form-btn" onclick="showDeleteModal()" style="display:none">刪除</button>
+      </div>
+    </div>
+    <select id="form-dropdown" onchange="onFormSelect()">
+      <option value="">-- 請選擇或新增表單 --</option>
+    </select>
+    <div class="form-selector-info">
+      <span class="dot" id="connection-dot"></span>
+      <span id="connection-text"></span>
+      <span id="last-saved-time" style="margin-left:auto;"></span>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progress"></div>
+
+  <!-- Step 0: Requirement Definition -->
+  <div id="step-0" class="phase-section">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#E8725A">0</div>
+      <div>
+        <div class="phase-label" style="color:#E8725A">Phase 0</div>
+        <div class="phase-name">需求定義</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">工具名稱</div>
+      <div class="field-hint">給這個工具一個簡短的名字</div>
+      <input type="text" id="tool-name" placeholder="例：RRU 散熱面積計算器" data-field="toolName">
+    </div>
+    <div class="field-group">
+      <div class="field-label">一句話描述</div>
+      <div class="field-hint">這個工具讓___可以透過___，快速得到___</div>
+      <textarea id="one-liner" rows="2" placeholder="例：讓散熱工程師可以透過上傳元件功耗表，快速得到所需散熱面積計算結果" data-field="oneLiner"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">使用者</div>
+      <div class="field-hint">誰會用這個工具？</div>
+      <input type="text" id="users" placeholder="例：散熱工程師、機構工程師" data-field="users">
+    </div>
+    <div class="field-group">
+      <div class="field-label">觸發情境</div>
+      <div class="field-hint">什麼時候會打開這個工具？</div>
+      <input type="text" id="trigger" placeholder="例：每次拿到新案子的功耗表時" data-field="trigger">
+    </div>
+    <div class="field-group">
+      <div class="field-label">輸入</div>
+      <div class="field-hint">使用者要提供什麼資料？格式、欄位、單位</div>
+      <textarea id="input-spec" rows="3" placeholder="例：.xlsx 檔案，包含元件名稱(A欄)、功耗W(B欄)、Tj_max°C(C欄)" data-field="inputSpec"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">輸出</div>
+      <div class="field-hint">工具跑完後使用者拿到什麼？</div>
+      <textarea id="output-spec" rows="3" placeholder="例：計算結果的 Excel 檔 + 長條圖 + 畫面顯示摘要" data-field="outputSpec"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">成功定義</div>
+      <div class="field-hint">怎樣算「這工具有用」？</div>
+      <input type="text" id="success-def" placeholder="例：原本手動算 2 小時，現在 10 秒出結果" data-field="successDef">
+    </div>
+  </div>
+
+  <!-- Step 1: Spec Design -->
+  <div id="step-1" class="phase-section" style="display:none">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#D4852F">1</div>
+      <div>
+        <div class="phase-label" style="color:#D4852F">Phase 1</div>
+        <div class="phase-name">規格設計</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">輸入檔案格式</div>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" name="input-format" id="fmt-xlsx" value=".xlsx" data-field="inputFormat">
+          <label for="fmt-xlsx">.xlsx</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="input-format" id="fmt-csv" value=".csv" data-field="inputFormat">
+          <label for="fmt-csv">.csv</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="input-format" id="fmt-manual" value="手動輸入" data-field="inputFormat">
+          <label for="fmt-manual">手動輸入</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="input-format" id="fmt-other" value="其他" data-field="inputFormat">
+          <label for="fmt-other">其他</label>
+        </div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">輸入欄位定義</div>
+      <div class="field-hint">欄位名稱、資料型態、單位</div>
+      <textarea id="input-fields" rows="3" placeholder="例：&#10;元件名稱（文字）&#10;功耗（數字，單位：W）&#10;最大接面溫度（數字，單位：°C）" data-field="inputFields"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">輸出格式</div>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" name="output-format" id="out-screen" value="畫面顯示" data-field="outputFormat">
+          <label for="out-screen">畫面顯示</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="output-format" id="out-excel" value="匯出 Excel" data-field="outputFormat">
+          <label for="out-excel">匯出 Excel</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="output-format" id="out-pdf" value="產生 PDF" data-field="outputFormat">
+          <label for="out-pdf">產生 PDF</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="output-format" id="out-multi" value="多種格式" data-field="outputFormat">
+          <label for="out-multi">多種格式</label>
+        </div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">計算邏輯</div>
+      <div class="field-hint">公式、規則、Lookup table、經驗值</div>
+      <textarea id="calc-logic" rows="4" placeholder="例：&#10;散熱面積 = Q / (h × ΔT)&#10;h 預設：自然對流 10 W/m²K，強制對流 50 W/m²K&#10;ΔT = Tj_max - T_ambient" data-field="calcLogic"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">邊界條件處理</div>
+      <div class="field-hint">空值、零值、負值、超出範圍怎麼處理？</div>
+      <textarea id="boundary" rows="2" placeholder="例：功耗欄位為空或非數字時，跳過並警告" data-field="boundary"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">限制與假設</div>
+      <div class="field-hint">這工具「不做」什麼？前提假設？</div>
+      <textarea id="limits" rows="2" placeholder="例：不做 3D 模擬，假設使用者都用 Windows" data-field="limits"></textarea>
+    </div>
+  </div>
+
+  <!-- Step 2: Tech Stack + Architecture -->
+  <div id="step-2" class="phase-section" style="display:none">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#2D9B6E">1+2</div>
+      <div>
+        <div class="phase-label" style="color:#2D9B6E">Phase 1.4 + Phase 2</div>
+        <div class="phase-name">技術架構 + 功能拆解</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">前端框架</div>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" name="frontend" id="fe-streamlit" value="Streamlit" checked data-field="frontend">
+          <label for="fe-streamlit">Streamlit<br><span style="font-size:11px;font-weight:400;color:#999">快速開發，適合內部工具</span></label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="frontend" id="fe-reflex" value="Reflex" data-field="frontend">
+          <label for="fe-reflex">Reflex<br><span style="font-size:11px;font-weight:400;color:#999">更精緻的 UI</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">資料庫</div>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" name="database" id="db-firebase" value="Firebase" checked data-field="database">
+          <label for="db-firebase">Firebase<br><span style="font-size:11px;font-weight:400;color:#999">設定簡單，中小型資料</span></label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="database" id="db-supabase" value="Supabase" data-field="database">
+          <label for="db-supabase">Supabase<br><span style="font-size:11px;font-weight:400;color:#999">複雜查詢，大量資料</span></label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="database" id="db-none" value="不需要資料庫" data-field="database">
+          <label for="db-none">不需要<br><span style="font-size:11px;font-weight:400;color:#999">純計算工具</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">需要 UI 介面嗎？</div>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" name="ui-need" id="ui-yes" value="需要 UI" checked data-field="uiNeed">
+          <label for="ui-yes">需要 UI</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" name="ui-need" id="ui-no" value="純指令操作" data-field="uiNeed">
+          <label for="ui-no">純指令操作</label>
+        </div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">功能拆解清單</div>
+      <div class="field-hint">把工具拆成獨立的小功能，每個用一句話描述</div>
+      <div class="feature-list" id="feature-list">
+        <div class="feature-item">
+          <span class="num">1</span>
+          <input type="text" class="feature-input" placeholder="例：讀取 Excel 並提取功耗欄位" data-field="features">
+          <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+        </div>
+        <div class="feature-item">
+          <span class="num">2</span>
+          <input type="text" class="feature-input" placeholder="例：根據功耗計算散熱面積" data-field="features">
+          <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+        </div>
+        <div class="feature-item">
+          <span class="num">3</span>
+          <input type="text" class="feature-input" placeholder="例：將結果畫成長條圖" data-field="features">
+          <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+        </div>
+      </div>
+      <button class="add-feature-btn" onclick="addFeature()">+ 新增功能</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Preview + GitHub Push -->
+  <div id="step-3" class="phase-section" style="display:none">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#2E86C1">&#10003;</div>
+      <div>
+        <div class="phase-label" style="color:#2E86C1">最後一步</div>
+        <div class="phase-name">預覽 + 推送到 GitHub</div>
+      </div>
+    </div>
+    <div class="github-config">
+      <div class="field-label">GitHub 設定</div>
+      <div class="field-hint">填入你的 GitHub 資訊，規格文件會自動推送到你的 repo</div>
+      <div style="margin-top:12px">
+        <div class="field-label" style="font-size:12px">Personal Access Token</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+          <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx" style="flex:1">
+          <button onclick="toggleTokenVisibility()" id="toggle-eye-btn" style="
+            padding:8px 12px;border-radius:8px;border:1px solid #444;
+            background:#333;color:#CCC;font-size:13px;cursor:pointer;white-space:nowrap;
+          ">&#128065; 顯示</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+          <input type="checkbox" id="remember-token" onchange="handleRememberToggle()" style="
+            width:16px;height:16px;accent-color:#2D9B6E;cursor:pointer;
+          ">
+          <span style="font-size:12px;color:#AAA">記住 Token 和 Repo（儲存在此瀏覽器）</span>
+        </label>
+        <div class="field-hint" style="margin-top:0">
+          到 GitHub &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; 建立 token（需要 repo 權限）
+        </div>
+        <div id="saved-indicator" style="
+          display:none;margin-top:6px;padding:6px 12px;border-radius:6px;
+          background:#2D9B6E20;color:#2D9B6E;font-size:12px;font-weight:600;
+        ">&#10003; 已從瀏覽器載入儲存的設定</div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="field-label" style="font-size:12px">Repository（格式：owner/repo）</div>
+        <input type="text" id="gh-repo" placeholder="例：tedus/rru-thermal-tool" style="margin-bottom:10px">
+      </div>
+      <div>
+        <div class="field-label" style="font-size:12px">檔案路徑（在 repo 中的位置）</div>
+        <input type="text" id="gh-path" value="SPEC.md" style="margin-bottom:4px">
+        <div class="field-hint">建議用 SPEC.md，Claude Code 可以直接讀取</div>
+      </div>
+      <button onclick="clearSavedSettings()" id="clear-settings-btn" style="
+        display:none;margin-top:10px;padding:6px 14px;border-radius:6px;
+        border:1px solid #555;background:transparent;color:#888;
+        font-size:12px;cursor:pointer;
+      ">&#128465; 清除已儲存的設定</button>
+    </div>
+    <div class="field-group">
+      <div class="field-label">預覽生成的規格文件</div>
+      <div class="field-hint">這就是會推送到 GitHub 的內容</div>
+      <div class="preview-wrapper">
+        <button class="copy-btn" onclick="copyPreview()">複製</button>
+        <div class="preview-box">
+          <pre id="preview-content"></pre>
+        </div>
+      </div>
+    </div>
+    <div id="status-msg" class="status-msg"></div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-bar">
+    <button class="btn btn-secondary" id="prev-btn" onclick="prevStep()" disabled>&larr; 上一步</button>
+    <button class="btn btn-primary" id="next-btn" onclick="nextStep()">下一步 &rarr;</button>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <h3>確認刪除</h3>
+    <p id="delete-modal-text">確定要刪除這份表單嗎？此操作無法復原。</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="hideDeleteModal()">取消</button>
+      <button class="btn btn-primary" style="background:#E8725A" onclick="confirmDeleteForm()">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat mode for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ===== Global State =====
+const TOTAL_STEPS = 4;
+let currentStep = 0;
+let db = null;
+let firebaseConnected = false;
+let currentFormId = null;
+let saveTimeout = null;
+let isSaving = false;
+let formListCache = [];
+
+// ===== Firebase Connection =====
+function toggleFirebaseConfig() {
+  const fields = document.getElementById('firebase-config-fields');
+  const icon = document.getElementById('firebase-toggle-icon');
+  fields.classList.toggle('show');
+  icon.classList.toggle('open');
+}
+
+function getFirebaseConfig() {
+  return {
+    apiKey: document.getElementById('fb-apiKey').value.trim(),
+    authDomain: document.getElementById('fb-authDomain').value.trim(),
+    projectId: document.getElementById('fb-projectId').value.trim(),
+    storageBucket: document.getElementById('fb-storageBucket').value.trim(),
+    messagingSenderId: document.getElementById('fb-messagingSenderId').value.trim(),
+    appId: document.getElementById('fb-appId').value.trim(),
+  };
+}
+
+function connectFirebase() {
+  const config = getFirebaseConfig();
+  if (!config.apiKey || !config.projectId) {
+    showFirebaseStatus('error', '請至少填寫 API Key 和 Project ID');
+    return;
+  }
+
+  try {
+    // Initialize Firebase (avoid re-init)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    db = firebase.firestore();
+
+    // Test connection by reading collection
+    db.collection('tool-specs').limit(1).get().then(() => {
+      firebaseConnected = true;
+      showFirebaseStatus('success', '已成功連接 Firebase！');
+      updateConnectionIndicator(true);
+
+      // Save config if checkbox checked
+      if (document.getElementById('fb-remember').checked) {
+        saveFirebaseConfig(config);
+      }
+
+      // Show form selector & load forms
+      document.getElementById('form-selector').style.display = 'block';
+      loadFormList();
+
+      // Collapse config panel after successful connection
+      setTimeout(() => {
+        document.getElementById('firebase-config-fields').classList.remove('show');
+        document.getElementById('firebase-toggle-icon').classList.remove('open');
+      }, 1500);
+
+    }).catch(err => {
+      showFirebaseStatus('error', '連接失敗：' + err.message);
+      updateConnectionIndicator(false);
+    });
+  } catch (e) {
+    showFirebaseStatus('error', '初始化失敗：' + e.message);
+  }
+}
+
+function showFirebaseStatus(type, msg) {
+  const el = document.getElementById('firebase-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? '#2D9B6E' : '#E8725A';
+}
+
+function saveFirebaseConfig(config) {
+  localStorage.setItem('fb-config', JSON.stringify(config));
+  localStorage.setItem('fb-remember', 'true');
+}
+
+function loadFirebaseConfig() {
+  if (localStorage.getItem('fb-remember') !== 'true') return;
+  const saved = localStorage.getItem('fb-config');
+  if (!saved) return;
+
+  try {
+    const config = JSON.parse(saved);
+    document.getElementById('fb-apiKey').value = config.apiKey || '';
+    document.getElementById('fb-authDomain').value = config.authDomain || '';
+    document.getElementById('fb-projectId').value = config.projectId || '';
+    document.getElementById('fb-storageBucket').value = config.storageBucket || '';
+    document.getElementById('fb-messagingSenderId').value = config.messagingSenderId || '';
+    document.getElementById('fb-appId').value = config.appId || '';
+    document.getElementById('fb-remember').checked = true;
+
+    // Auto-connect
+    setTimeout(() => connectFirebase(), 300);
+  } catch(e) { /* ignore parse errors */ }
+}
+
+function updateConnectionIndicator(connected) {
+  const dot = document.getElementById('connection-dot');
+  const text = document.getElementById('connection-text');
+  if (connected) {
+    dot.className = 'dot dot-connected';
+    text.textContent = 'Firebase 已連接';
+  } else {
+    dot.className = 'dot dot-disconnected';
+    text.textContent = 'Firebase 未連接';
+  }
+}
+
+// ===== Form List Management =====
+async function loadFormList() {
+  if (!db) return;
+  try {
+    const snapshot = await db.collection('tool-specs')
+      .orderBy('updatedAt', 'desc')
+      .get();
+
+    formListCache = [];
+    const dropdown = document.getElementById('form-dropdown');
+    // Keep the first placeholder option
+    dropdown.innerHTML = '<option value="">-- 請選擇或新增表單 --</option>';
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const name = data.toolName || '未命名工具';
+      const updatedAt = data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleString('zh-TW') : '';
+      formListCache.push({ id: doc.id, name, updatedAt, data });
+
+      const option = document.createElement('option');
+      option.value = doc.id;
+      option.textContent = name + (updatedAt ? ` (${updatedAt})` : '');
+      dropdown.appendChild(option);
+    });
+
+    // Re-select current form if exists
+    if (currentFormId) {
+      dropdown.value = currentFormId;
+    }
+  } catch(e) {
+    console.error('Failed to load form list:', e);
+  }
+}
+
+function onFormSelect() {
+  const dropdown = document.getElementById('form-dropdown');
+  const formId = dropdown.value;
+  const deleteBtn = document.getElementById('delete-form-btn');
+
+  if (!formId) {
+    currentFormId = null;
+    deleteBtn.style.display = 'none';
+    clearFormFields();
+    return;
+  }
+
+  currentFormId = formId;
+  deleteBtn.style.display = 'inline-block';
+  loadFormData(formId);
+}
+
+async function loadFormData(formId) {
+  if (!db) return;
+  try {
+    const doc = await db.collection('tool-specs').doc(formId).get();
+    if (!doc.exists) return;
+
+    const data = doc.data();
+    populateFormFromData(data);
+    showSaveIndicator('saved');
+    updateLastSavedTime(data.updatedAt);
+  } catch(e) {
+    console.error('Failed to load form data:', e);
+  }
+}
+
+function populateFormFromData(data) {
+  // Text fields
+  setFieldValue('tool-name', data.toolName || '');
+  setFieldValue('one-liner', data.oneLiner || '');
+  setFieldValue('users', data.users || '');
+  setFieldValue('trigger', data.trigger || '');
+  setFieldValue('input-spec', data.inputSpec || '');
+  setFieldValue('output-spec', data.outputSpec || '');
+  setFieldValue('success-def', data.successDef || '');
+  setFieldValue('input-fields', data.inputFields || '');
+  setFieldValue('calc-logic', data.calcLogic || '');
+  setFieldValue('boundary', data.boundary || '');
+  setFieldValue('limits', data.limits || '');
+
+  // Radio buttons
+  if (data.inputFormat) setRadioValue('input-format', data.inputFormat);
+  if (data.outputFormat) setRadioValue('output-format', data.outputFormat);
+  if (data.frontend) setRadioValue('frontend', data.frontend);
+  if (data.database) setRadioValue('database', data.database);
+  if (data.uiNeed) setRadioValue('ui-need', data.uiNeed);
+
+  // Features list
+  const featureList = document.getElementById('feature-list');
+  featureList.innerHTML = '';
+  if (data.features && data.features.length > 0) {
+    data.features.forEach((feat, i) => {
+      const div = document.createElement('div');
+      div.className = 'feature-item';
+      div.innerHTML = `
+        <span class="num">${i + 1}</span>
+        <input type="text" class="feature-input" value="${escapeHtml(feat)}" data-field="features">
+        <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+      `;
+      featureList.appendChild(div);
+    });
+    // Attach auto-save listeners to new feature inputs
+    featureList.querySelectorAll('.feature-input').forEach(inp => {
+      inp.addEventListener('input', scheduleAutoSave);
+    });
+  } else {
+    // Default 3 empty features
+    for (let i = 1; i <= 3; i++) {
+      const div = document.createElement('div');
+      div.className = 'feature-item';
+      div.innerHTML = `
+        <span class="num">${i}</span>
+        <input type="text" class="feature-input" placeholder="功能描述..." data-field="features">
+        <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+      `;
+      featureList.appendChild(div);
+    }
+    featureList.querySelectorAll('.feature-input').forEach(inp => {
+      inp.addEventListener('input', scheduleAutoSave);
+    });
+  }
+
+  // GitHub settings
+  if (data.ghRepo) setFieldValue('gh-repo', data.ghRepo);
+  if (data.ghPath) setFieldValue('gh-path', data.ghPath);
+
+  // Current step
+  if (typeof data.currentStep === 'number') {
+    currentStep = data.currentStep;
+    showStep(currentStep);
+  }
+}
+
+function setFieldValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
+function setRadioValue(name, value) {
+  const radios = document.querySelectorAll(`input[name="${name}"]`);
+  radios.forEach(r => { r.checked = (r.value === value); });
+}
+
+function clearFormFields() {
+  // Clear all text inputs and textareas
+  const fields = ['tool-name', 'one-liner', 'users', 'trigger', 'input-spec',
+    'output-spec', 'success-def', 'input-fields', 'calc-logic', 'boundary', 'limits'];
+  fields.forEach(id => setFieldValue(id, ''));
+
+  // Reset radios to defaults
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  document.getElementById('fe-streamlit').checked = true;
+  document.getElementById('db-firebase').checked = true;
+  document.getElementById('ui-yes').checked = true;
+
+  // Reset features
+  const featureList = document.getElementById('feature-list');
+  featureList.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    const div = document.createElement('div');
+    div.className = 'feature-item';
+    div.innerHTML = `
+      <span class="num">${i}</span>
+      <input type="text" class="feature-input" placeholder="功能描述..." data-field="features">
+      <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+    `;
+    featureList.appendChild(div);
+  }
+  featureList.querySelectorAll('.feature-input').forEach(inp => {
+    inp.addEventListener('input', scheduleAutoSave);
+  });
+
+  // Reset step
+  currentStep = 0;
+  showStep(0);
+
+  // Update last saved time
+  document.getElementById('last-saved-time').textContent = '';
+}
+
+async function createNewForm() {
+  if (!db) return;
+
+  const toolName = prompt('請輸入新工具的名稱：');
+  if (!toolName || !toolName.trim()) return;
+
+  try {
+    const newDoc = await db.collection('tool-specs').add({
+      toolName: toolName.trim(),
+      oneLiner: '',
+      users: '',
+      trigger: '',
+      inputSpec: '',
+      outputSpec: '',
+      successDef: '',
+      inputFormat: '',
+      inputFields: '',
+      outputFormat: '',
+      calcLogic: '',
+      boundary: '',
+      limits: '',
+      frontend: 'Streamlit',
+      database: 'Firebase',
+      uiNeed: '需要 UI',
+      features: [],
+      ghRepo: '',
+      ghPath: 'SPEC.md',
+      currentStep: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    currentFormId = newDoc.id;
+    await loadFormList();
+    document.getElementById('form-dropdown').value = currentFormId;
+    document.getElementById('delete-form-btn').style.display = 'inline-block';
+
+    clearFormFields();
+    setFieldValue('tool-name', toolName.trim());
+    showSaveIndicator('saved');
+  } catch(e) {
+    console.error('Failed to create form:', e);
+    alert('建立表單失敗：' + e.message);
+  }
+}
+
+function showDeleteModal() {
+  if (!currentFormId) return;
+  const cached = formListCache.find(f => f.id === currentFormId);
+  const name = cached ? cached.name : '此表單';
+  document.getElementById('delete-modal-text').textContent = `確定要刪除「${name}」嗎？此操作無法復原。`;
+  document.getElementById('delete-modal').classList.add('show');
+}
+
+function hideDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('show');
+}
+
+async function confirmDeleteForm() {
+  if (!db || !currentFormId) return;
+  try {
+    await db.collection('tool-specs').doc(currentFormId).delete();
+    currentFormId = null;
+    hideDeleteModal();
+    clearFormFields();
+    document.getElementById('delete-form-btn').style.display = 'none';
+    await loadFormList();
+  } catch(e) {
+    console.error('Failed to delete form:', e);
+    alert('刪除失敗：' + e.message);
+    hideDeleteModal();
+  }
+}
+
+// ===== Auto-Save =====
+function collectFormData() {
+  return {
+    toolName: getVal('tool-name'),
+    oneLiner: getVal('one-liner'),
+    users: getVal('users'),
+    trigger: getVal('trigger'),
+    inputSpec: getVal('input-spec'),
+    outputSpec: getVal('output-spec'),
+    successDef: getVal('success-def'),
+    inputFormat: getRadio('input-format'),
+    inputFields: getVal('input-fields'),
+    outputFormat: getRadio('output-format'),
+    calcLogic: getVal('calc-logic'),
+    boundary: getVal('boundary'),
+    limits: getVal('limits'),
+    frontend: getRadio('frontend'),
+    database: getRadio('database'),
+    uiNeed: getRadio('ui-need'),
+    features: getFeatures().map(f => f.replace(/^\d+\.\s*/, '')),
+    ghRepo: getVal('gh-repo'),
+    ghPath: getVal('gh-path'),
+    currentStep: currentStep,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
+function scheduleAutoSave() {
+  if (!firebaseConnected || !currentFormId) return;
+
+  // Debounce: wait 800ms after last input
+  clearTimeout(saveTimeout);
+  showSaveIndicator('saving');
+
+  saveTimeout = setTimeout(() => {
+    autoSave();
+  }, 800);
+}
+
+async function autoSave() {
+  if (!db || !currentFormId || isSaving) return;
+
+  isSaving = true;
+  try {
+    const data = collectFormData();
+    await db.collection('tool-specs').doc(currentFormId).update(data);
+    showSaveIndicator('saved');
+    updateLastSavedTime(new Date());
+
+    // Update dropdown text if tool name changed
+    const dropdown = document.getElementById('form-dropdown');
+    const option = dropdown.querySelector(`option[value="${currentFormId}"]`);
+    if (option && data.toolName) {
+      const timeStr = new Date().toLocaleString('zh-TW');
+      option.textContent = data.toolName + ` (${timeStr})`;
+    }
+  } catch(e) {
+    console.error('Auto-save failed:', e);
+    showSaveIndicator('error');
+  } finally {
+    isSaving = false;
+  }
+}
+
+function showSaveIndicator(state) {
+  const el = document.getElementById('save-indicator');
+  el.className = 'save-indicator';
+  switch (state) {
+    case 'saving':
+      el.classList.add('saving');
+      el.textContent = '儲存中...';
+      break;
+    case 'saved':
+      el.classList.add('saved');
+      el.textContent = '已儲存';
+      // Fade out after 3s
+      setTimeout(() => {
+        if (el.classList.contains('saved')) {
+          el.style.opacity = '0.5';
+        }
+      }, 3000);
+      el.style.opacity = '1';
+      break;
+    case 'error':
+      el.classList.add('error');
+      el.textContent = '儲存失敗';
+      break;
+  }
+}
+
+function updateLastSavedTime(timestamp) {
+  const el = document.getElementById('last-saved-time');
+  if (!timestamp) {
+    el.textContent = '';
+    return;
+  }
+  let date;
+  if (timestamp.toDate) {
+    date = timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = new Date(timestamp);
+  }
+  el.textContent = '最後儲存：' + date.toLocaleString('zh-TW');
+}
+
+// Attach auto-save listeners to all form fields
+function attachAutoSaveListeners() {
+  // Text inputs and textareas
+  document.querySelectorAll('input[type="text"][data-field], textarea[data-field]').forEach(el => {
+    el.addEventListener('input', scheduleAutoSave);
+  });
+
+  // Radio buttons
+  document.querySelectorAll('input[type="radio"][data-field]').forEach(el => {
+    el.addEventListener('change', scheduleAutoSave);
+  });
+
+  // Feature inputs (initial ones)
+  document.querySelectorAll('.feature-input').forEach(el => {
+    el.addEventListener('input', scheduleAutoSave);
+  });
+}
+
+// ===== Utility =====
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== Progress & Navigation =====
+function updateProgress() {
+  let html = '';
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    let cls = 'progress-step';
+    if (i < currentStep) cls += ' done';
+    else if (i === currentStep) cls += ' active';
+    html += `<div class="${cls}"></div>`;
+  }
+  document.getElementById('progress').innerHTML = html;
+}
+
+function showStep(step) {
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const el = document.getElementById(`step-${i}`);
+    if (el) el.style.display = i === step ? 'block' : 'none';
+  }
+  document.getElementById('prev-btn').disabled = step === 0;
+  if (step === TOTAL_STEPS - 1) {
+    document.getElementById('next-btn').textContent = '推送到 GitHub';
+    document.getElementById('next-btn').style.background = '#E8725A';
+    generatePreview();
+  } else {
+    document.getElementById('next-btn').textContent = '下一步 \u2192';
+    document.getElementById('next-btn').style.background = '#2D9B6E';
+  }
+  updateProgress();
+}
+
+function nextStep() {
+  if (currentStep === TOTAL_STEPS - 1) {
+    pushToGitHub();
+    return;
+  }
+  currentStep = Math.min(TOTAL_STEPS - 1, currentStep + 1);
+  showStep(currentStep);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Auto-save step progress
+  scheduleAutoSave();
+}
+
+function prevStep() {
+  currentStep = Math.max(0, currentStep - 1);
+  showStep(currentStep);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Auto-save step progress
+  scheduleAutoSave();
+}
+
+// ===== Feature List =====
+function addFeature() {
+  const list = document.getElementById('feature-list');
+  const count = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'feature-item';
+  div.innerHTML = `
+    <span class="num">${count}</span>
+    <input type="text" class="feature-input" placeholder="功能描述..." data-field="features">
+    <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+  `;
+  list.appendChild(div);
+  // Attach auto-save to new input
+  div.querySelector('.feature-input').addEventListener('input', scheduleAutoSave);
+}
+
+function removeFeature(btn) {
+  const item = btn.closest('.feature-item');
+  const list = document.getElementById('feature-list');
+  if (list.children.length <= 1) return; // Keep at least one
+  item.remove();
+  // Re-number
+  Array.from(list.children).forEach((child, i) => {
+    child.querySelector('.num').textContent = i + 1;
+  });
+  scheduleAutoSave();
+}
+
+// ===== Form Value Helpers =====
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function getRadio(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+
+function getFeatures() {
+  const inputs = document.querySelectorAll('.feature-input');
+  const features = [];
+  inputs.forEach((inp, i) => {
+    if (inp.value.trim()) features.push(`${i + 1}. ${inp.value.trim()}`);
+  });
+  return features;
+}
+
+// ===== Markdown Generation =====
+function generateMarkdown() {
+  const features = getFeatures();
+  const now = new Date().toLocaleDateString('zh-TW');
+
+  let md = `# ${getVal('tool-name') || '未命名工具'} \u2014 開發規格書
+
+> 建立日期：${now}
+
+---
+
+## Phase 0：需求定義
+
+- **一句話描述**：${getVal('one-liner') || '（未填寫）'}
+- **使用者**：${getVal('users') || '（未填寫）'}
+- **觸發情境**：${getVal('trigger') || '（未填寫）'}
+- **輸入**：${getVal('input-spec') || '（未填寫）'}
+- **輸出**：${getVal('output-spec') || '（未填寫）'}
+- **成功定義**：${getVal('success-def') || '（未填寫）'}
+
+---
+
+## Phase 1：規格設計
+
+### 1.1 資料格式規格
+- **輸入檔案格式**：${getRadio('input-format') || '（未選擇）'}
+- **輸入欄位定義**：
+${getVal('input-fields') ? getVal('input-fields').split('\n').map(l => `  - ${l}`).join('\n') : '  （未填寫）'}
+- **輸出格式**：${getRadio('output-format') || '（未選擇）'}
+
+### 1.2 計算邏輯規格
+${getVal('calc-logic') || '（未填寫）'}
+
+### 1.3 邊界條件處理
+${getVal('boundary') || '（未填寫）'}
+
+### 1.4 技術架構
+- **前端框架**：${getRadio('frontend') || 'Streamlit'}
+- **資料庫**：${getRadio('database') || 'Firebase'}
+- **介面需求**：${getRadio('ui-need') || '需要 UI'}
+- **程式語言**：Python
+- **版本控制**：GitHub
+- **部署**：${getRadio('frontend') === 'Reflex' ? 'Reflex Cloud' : 'Streamlit Cloud'}
+
+### 1.5 限制與假設
+${getVal('limits') || '（未填寫）'}
+
+---
+
+## Phase 2：功能拆解
+
+${features.length > 0 ? features.join('\n') : '（未填寫）'}
+
+---
+
+## Phase 3：開發規則
+
+**一次只做一個功能，測試通過再做下一個。**
+
+每輪開發使用以下格式：
+- 【目標】這一步要完成什麼
+- 【輸入】這個功能接收什麼
+- 【輸出】這個功能要產出什麼
+- 【規則】計算邏輯或判斷條件
+- 【範例】一組具體的輸入 → 預期輸出
+
+---
+
+## Phase 4：測試驗證
+
+| 測試類型 | 內容 |
+|---|---|
+| 正常測試 | 用標準輸入驗證結果正確性 |
+| 邊界測試 | 用極端值測試（最大、最小、零、空白） |
+| 錯誤測試 | 輸入錯誤資料（格式不對、缺欄位） |
+
+---
+
+## Phase 5：迭代優化
+
+優先順序：正確性 > 穩定性 > 易用性 > 效率性 > 美觀性
+`;
+  return md;
+}
+
+function generatePreview() {
+  document.getElementById('preview-content').textContent = generateMarkdown();
+}
+
+function copyPreview() {
+  const text = document.getElementById('preview-content').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '已複製 \u2713';
+    setTimeout(() => btn.textContent = '複製', 2000);
+  });
+}
+
+// ===== GitHub Push =====
+function showStatus(type, msg) {
+  const el = document.getElementById('status-msg');
+  el.className = `status-msg ${type}`;
+  el.textContent = msg;
+}
+
+async function pushToGitHub() {
+  const token = getVal('gh-token');
+  const repo = getVal('gh-repo');
+  const path = getVal('gh-path') || 'SPEC.md';
+
+  if (!token || !repo) {
+    showStatus('error', '請填寫 GitHub Token 和 Repository');
+    return;
+  }
+
+  showStatus('loading', '正在推送到 GitHub...');
+
+  const content = generateMarkdown();
+  const base64Content = btoa(unescape(encodeURIComponent(content)));
+
+  try {
+    let sha = null;
+    try {
+      const checkRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        }
+      });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        sha = checkData.sha;
+      }
+    } catch(e) { /* file doesn't exist */ }
+
+    const body = {
+      message: `更新開發規格書: ${getVal('tool-name') || 'spec'}`,
+      content: base64Content,
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      if (document.getElementById('remember-token').checked) {
+        saveGitHubSettings();
+      }
+      showStatus('success', `成功推送到 ${repo}/${path}！Claude Code 現在可以讀取了。`);
+    } else {
+      const err = await res.json();
+      showStatus('error', `推送失敗：${err.message}`);
+    }
+  } catch (e) {
+    showStatus('error', `網路錯誤：${e.message}`);
+  }
+}
+
+// ===== Remember GitHub Token & Settings =====
+function obfuscate(str) {
+  return btoa(unescape(encodeURIComponent(str))).split('').reverse().join('');
+}
+
+function deobfuscate(str) {
+  try {
+    return decodeURIComponent(escape(atob(str.split('').reverse().join(''))));
+  } catch(e) { return ''; }
+}
+
+function saveGitHubSettings() {
+  const token = getVal('gh-token');
+  const repo = getVal('gh-repo');
+  if (token) localStorage.setItem('spec-gh-token', obfuscate(token));
+  if (repo) localStorage.setItem('spec-gh-repo', repo);
+  localStorage.setItem('spec-remember', 'true');
+}
+
+function loadGitHubSettings() {
+  const remembered = localStorage.getItem('spec-remember') === 'true';
+  if (!remembered) return;
+
+  const savedToken = localStorage.getItem('spec-gh-token');
+  const savedRepo = localStorage.getItem('spec-gh-repo');
+  if (savedToken) document.getElementById('gh-token').value = deobfuscate(savedToken);
+  if (savedRepo) document.getElementById('gh-repo').value = savedRepo;
+  document.getElementById('remember-token').checked = true;
+
+  if (savedToken || savedRepo) {
+    document.getElementById('saved-indicator').style.display = 'block';
+    document.getElementById('clear-settings-btn').style.display = 'inline-block';
+  }
+}
+
+function handleRememberToggle() {
+  if (document.getElementById('remember-token').checked) {
+    saveGitHubSettings();
+  } else {
+    clearSavedSettings();
+  }
+}
+
+function clearSavedSettings() {
+  localStorage.removeItem('spec-gh-token');
+  localStorage.removeItem('spec-gh-repo');
+  localStorage.removeItem('spec-remember');
+  document.getElementById('remember-token').checked = false;
+  document.getElementById('saved-indicator').style.display = 'none';
+  document.getElementById('clear-settings-btn').style.display = 'none';
+}
+
+function toggleTokenVisibility() {
+  const input = document.getElementById('gh-token');
+  const btn = document.getElementById('toggle-eye-btn');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '&#128274; 隱藏';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '&#128065; 顯示';
+  }
+}
+
+// ===== Initialize =====
+updateProgress();
+loadGitHubSettings();
+loadFirebaseConfig();
+attachAutoSaveListeners();
+</script>
+</body>
+</html>
