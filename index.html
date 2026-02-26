@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>工具開發規格填寫表</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -29,16 +32,157 @@
     font-weight: 700;
     white-space: nowrap;
   }
-  .top-bar .badge {
+  .top-bar .save-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: all 0.3s;
+  }
+  .save-status.saved {
     background: #2D9B6E;
     color: #FFF;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 20px;
-    letter-spacing: 1px;
+  }
+  .save-status.saving {
+    background: #E8725A;
+    color: #FFF;
+  }
+  .save-status.offline {
+    background: #555;
+    color: #AAA;
   }
 
+  /* Tool Switcher Bar */
+  .tool-switcher {
+    background: #2A2A2A;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 44px;
+    z-index: 99;
+    border-bottom: 1px solid #444;
+  }
+  .tool-switcher select {
+    flex: 1;
+    max-width: 400px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #333;
+    color: #FFF;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .tool-switcher select:focus {
+    border-color: #2D9B6E;
+    outline: none;
+  }
+  .tool-switcher button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #333;
+    color: #CCC;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tool-switcher button:hover {
+    background: #444;
+    border-color: #666;
+  }
+  .tool-switcher .btn-new {
+    background: #2D9B6E;
+    border-color: #2D9B6E;
+    color: #FFF;
+  }
+  .tool-switcher .btn-new:hover {
+    background: #258C5F;
+  }
+  .tool-switcher .btn-delete {
+    color: #E8725A;
+    border-color: #E8725A40;
+  }
+  .tool-switcher .btn-delete:hover {
+    background: #E8725A20;
+    border-color: #E8725A;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal-box {
+    background: #FFF;
+    border-radius: 16px;
+    padding: 32px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-box h2 {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .modal-box p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  .modal-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #E0E0E0;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-box input:focus {
+    border-color: #2D9B6E;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .modal-actions button {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .modal-actions .btn-cancel {
+    background: #F0F0F0;
+    color: #666;
+  }
+  .modal-actions .btn-confirm {
+    background: #2D9B6E;
+    color: #FFF;
+  }
+  .modal-actions .btn-confirm:hover {
+    background: #258C5F;
+  }
 
   .container {
     max-width: 720px;
@@ -126,6 +270,7 @@
     margin-bottom: 10px;
   }
   input[type="text"],
+  input[type="password"],
   textarea,
   select {
     width: 100%;
@@ -273,14 +418,39 @@
   }
   .github-config .field-label { color: #FFF; }
   .github-config .field-hint { color: #888; }
-  .github-config input {
+  .github-config input,
+  .github-config select {
     background: #2A2A2A;
     border-color: #444;
     color: #FFF;
   }
-  .github-config input:focus {
+  .github-config input:focus,
+  .github-config select:focus {
     border-color: #2D9B6E;
     background: #333;
+  }
+  /* Repo selector area */
+  .repo-selector-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .repo-selector-wrap select {
+    flex: 1;
+  }
+  .repo-selector-wrap button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #333;
+    color: #CCC;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .repo-selector-wrap button:hover {
+    background: #444;
   }
   /* Preview */
   .preview-box {
@@ -349,6 +519,7 @@
     .radio-group { flex-direction: column; }
     .radio-option { min-width: unset; }
     .top-bar { flex-wrap: wrap; gap: 8px; }
+    .tool-switcher { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -356,6 +527,29 @@
 
 <div class="top-bar">
   <h1>工具開發規格表</h1>
+  <span class="save-status offline" id="save-status">未連線</span>
+</div>
+
+<!-- Tool Switcher Bar -->
+<div class="tool-switcher">
+  <select id="tool-selector" onchange="onToolSelect()">
+    <option value="" disabled selected>-- 選擇工具專案 --</option>
+  </select>
+  <button class="btn-new" onclick="showNewToolModal()">+ 新增</button>
+  <button class="btn-delete" onclick="deleteCurrentTool()">刪除</button>
+</div>
+
+<!-- New Tool Modal -->
+<div class="modal-overlay" id="new-tool-modal">
+  <div class="modal-box">
+    <h2>建立新工具專案</h2>
+    <p>輸入預開發工具的名稱，建立後會自動儲存到雲端資料庫。</p>
+    <input type="text" id="new-tool-name" placeholder="例：RRU 散熱面積計算器" autofocus>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideNewToolModal()">取消</button>
+      <button class="btn-confirm" onclick="createNewTool()">建立</button>
+    </div>
+  </div>
 </div>
 
 <div class="container">
@@ -594,8 +788,20 @@
         ">&#10003; 已從瀏覽器載入儲存的設定</div>
       </div>
       <div style="margin-top:8px">
-        <div class="field-label" style="font-size:12px">Repository（格式：owner/repo）</div>
-        <input type="text" id="gh-repo" placeholder="例：tedus/rru-thermal-tool" style="margin-bottom:10px">
+        <div class="field-label" style="font-size:12px">Repository（從 GitHub 帳號自動載入）</div>
+        <div class="repo-selector-wrap">
+          <select id="gh-repo" data-field="ghRepo">
+            <option value="">-- 請先輸入 Token 以載入倉庫列表 --</option>
+          </select>
+          <button onclick="fetchRepos()" title="重新載入倉庫列表">&#x21BB; 載入</button>
+        </div>
+        <div id="repo-manual-wrap" style="margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
+            <input type="checkbox" id="repo-manual-toggle" onchange="toggleManualRepo()" style="width:14px;height:14px;accent-color:#2D9B6E;cursor:pointer;">
+            <span style="font-size:12px;color:#AAA">手動輸入 Repository</span>
+          </label>
+          <input type="text" id="gh-repo-manual" placeholder="例：tedus/rru-thermal-tool" style="display:none;background:#2A2A2A;border-color:#444;color:#FFF;" data-field="ghRepoManual">
+        </div>
       </div>
       <div>
         <div class="field-label" style="font-size:12px">檔案路徑（在 repo 中的位置）</div>
@@ -629,10 +835,41 @@
 </div>
 
 <script>
+// ===== Firebase Config =====
+const firebaseConfig = {
+  apiKey: "AIzaSyAh_Abq-q9gJz40KN0bBJ6hfOLQ0y36Ugs",
+  authDomain: "tool-spec-form.firebaseapp.com",
+  projectId: "tool-spec-form",
+  storageBucket: "tool-spec-form.firebasestorage.app",
+  messagingSenderId: "918692000904",
+  appId: "1:918692000904:web:d31b8730e3cbbeb7e95b3d"
+};
+
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COLLECTION = 'tool-specs';
+
 // ===== Global State =====
 const TOTAL_STEPS = 4;
 let currentStep = 0;
+let currentDocId = null;
+let saveTimer = null;
+let isLoading = false; // prevent auto-save during load
 
+// ===== Save Status Indicator =====
+function setSaveStatus(status) {
+  const el = document.getElementById('save-status');
+  if (status === 'saved') {
+    el.textContent = '已儲存';
+    el.className = 'save-status saved';
+  } else if (status === 'saving') {
+    el.textContent = '儲存中...';
+    el.className = 'save-status saving';
+  } else {
+    el.textContent = '未連線';
+    el.className = 'save-status offline';
+  }
+}
 
 // ===== Utility =====
 function escapeHtml(str) {
@@ -698,17 +935,20 @@ function addFeature() {
     <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
   `;
   list.appendChild(div);
+  // Attach auto-save listener to new input
+  const newInput = div.querySelector('.feature-input');
+  newInput.addEventListener('input', () => scheduleSave());
 }
 
 function removeFeature(btn) {
   const item = btn.closest('.feature-item');
   const list = document.getElementById('feature-list');
-  if (list.children.length <= 1) return; // Keep at least one
+  if (list.children.length <= 1) return;
   item.remove();
-  // Re-number
   Array.from(list.children).forEach((child, i) => {
     child.querySelector('.num').textContent = i + 1;
   });
+  scheduleSave();
 }
 
 // ===== Form Value Helpers =====
@@ -729,6 +969,358 @@ function getFeatures() {
     if (inp.value.trim()) features.push(`${i + 1}. ${inp.value.trim()}`);
   });
   return features;
+}
+
+// Get selected repo value (from dropdown or manual input)
+function getRepoValue() {
+  const manualOn = document.getElementById('repo-manual-toggle').checked;
+  if (manualOn) {
+    return getVal('gh-repo-manual');
+  }
+  return getVal('gh-repo');
+}
+
+// ===== Collect / Restore Form Data for Firebase =====
+function collectFormData() {
+  return {
+    toolName: getVal('tool-name'),
+    oneLiner: getVal('one-liner'),
+    users: getVal('users'),
+    trigger: getVal('trigger'),
+    inputSpec: getVal('input-spec'),
+    outputSpec: getVal('output-spec'),
+    successDef: getVal('success-def'),
+    inputFormat: getRadio('input-format'),
+    inputFields: getVal('input-fields'),
+    outputFormat: getRadio('output-format'),
+    calcLogic: getVal('calc-logic'),
+    boundary: getVal('boundary'),
+    limits: getVal('limits'),
+    frontend: getRadio('frontend'),
+    database: getRadio('database'),
+    uiNeed: getRadio('ui-need'),
+    features: Array.from(document.querySelectorAll('.feature-input')).map(inp => inp.value),
+    ghRepo: getRepoValue(),
+    ghPath: getVal('gh-path'),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
+function restoreFormData(data) {
+  isLoading = true;
+
+  // Text fields
+  const textMap = {
+    'tool-name': 'toolName',
+    'one-liner': 'oneLiner',
+    'users': 'users',
+    'trigger': 'trigger',
+    'input-spec': 'inputSpec',
+    'output-spec': 'outputSpec',
+    'success-def': 'successDef',
+    'input-fields': 'inputFields',
+    'calc-logic': 'calcLogic',
+    'boundary': 'boundary',
+    'limits': 'limits',
+    'gh-path': 'ghPath',
+  };
+
+  for (const [elId, key] of Object.entries(textMap)) {
+    const el = document.getElementById(elId);
+    if (el && data[key]) el.value = data[key];
+  }
+
+  // Radio buttons
+  const radioMap = {
+    'input-format': 'inputFormat',
+    'output-format': 'outputFormat',
+    'frontend': 'frontend',
+    'database': 'database',
+    'ui-need': 'uiNeed',
+  };
+
+  for (const [name, key] of Object.entries(radioMap)) {
+    if (data[key]) {
+      const radio = document.querySelector(`input[name="${name}"][value="${data[key]}"]`);
+      if (radio) radio.checked = true;
+    }
+  }
+
+  // Features
+  if (data.features && data.features.length > 0) {
+    const list = document.getElementById('feature-list');
+    list.innerHTML = '';
+    data.features.forEach((val, i) => {
+      const div = document.createElement('div');
+      div.className = 'feature-item';
+      div.innerHTML = `
+        <span class="num">${i + 1}</span>
+        <input type="text" class="feature-input" placeholder="功能描述..." data-field="features" value="${escapeHtml(val)}">
+        <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+      `;
+      list.appendChild(div);
+    });
+    // Re-attach listeners
+    list.querySelectorAll('.feature-input').forEach(inp => {
+      inp.addEventListener('input', () => scheduleSave());
+    });
+  }
+
+  // Repo - try to set dropdown, fall back to manual
+  if (data.ghRepo) {
+    const sel = document.getElementById('gh-repo');
+    const optExists = Array.from(sel.options).some(o => o.value === data.ghRepo);
+    if (optExists) {
+      sel.value = data.ghRepo;
+    } else {
+      // Set manual
+      document.getElementById('repo-manual-toggle').checked = true;
+      document.getElementById('gh-repo-manual').style.display = 'block';
+      document.getElementById('gh-repo-manual').value = data.ghRepo;
+    }
+  }
+
+  isLoading = false;
+}
+
+// ===== Firebase: Auto-Save with Debounce =====
+function scheduleSave() {
+  if (isLoading || !currentDocId) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  setSaveStatus('saving');
+  saveTimer = setTimeout(() => saveToFirebase(), 1000);
+}
+
+async function saveToFirebase() {
+  if (!currentDocId) return;
+  try {
+    const data = collectFormData();
+    await db.collection(COLLECTION).doc(currentDocId).update(data);
+    setSaveStatus('saved');
+    // Also update the dropdown text if tool name changed
+    const sel = document.getElementById('tool-selector');
+    const opt = sel.querySelector(`option[value="${currentDocId}"]`);
+    if (opt && data.toolName) {
+      opt.textContent = data.toolName;
+    }
+  } catch (e) {
+    console.error('Save failed:', e);
+    setSaveStatus('offline');
+  }
+}
+
+// ===== Firebase: Load Form List =====
+async function loadFormList() {
+  try {
+    const snapshot = await db.collection(COLLECTION).orderBy('updatedAt', 'desc').get();
+    const sel = document.getElementById('tool-selector');
+    sel.innerHTML = '<option value="" disabled>-- 選擇工具專案 --</option>';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      opt.textContent = data.toolName || '未命名工具';
+      sel.appendChild(opt);
+    });
+    // If we have a currentDocId, keep it selected
+    if (currentDocId) {
+      sel.value = currentDocId;
+    }
+  } catch (e) {
+    console.error('Load form list failed:', e);
+  }
+}
+
+// ===== Firebase: Select a Tool =====
+async function onToolSelect() {
+  const sel = document.getElementById('tool-selector');
+  const docId = sel.value;
+  if (!docId) return;
+
+  try {
+    const doc = await db.collection(COLLECTION).doc(docId).get();
+    if (doc.exists) {
+      currentDocId = docId;
+      clearForm();
+      restoreFormData(doc.data());
+      currentStep = 0;
+      showStep(0);
+      setSaveStatus('saved');
+    }
+  } catch (e) {
+    console.error('Load tool failed:', e);
+  }
+}
+
+// ===== Firebase: Create New Tool =====
+function showNewToolModal() {
+  document.getElementById('new-tool-modal').classList.add('active');
+  const input = document.getElementById('new-tool-name');
+  input.value = '';
+  input.focus();
+}
+
+function hideNewToolModal() {
+  document.getElementById('new-tool-modal').classList.remove('active');
+}
+
+async function createNewTool() {
+  const name = document.getElementById('new-tool-name').value.trim();
+  if (!name) {
+    document.getElementById('new-tool-name').style.borderColor = '#E8725A';
+    return;
+  }
+
+  try {
+    const docRef = await db.collection(COLLECTION).add({
+      toolName: name,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    currentDocId = docRef.id;
+    hideNewToolModal();
+    clearForm();
+    document.getElementById('tool-name').value = name;
+    currentStep = 0;
+    showStep(0);
+    setSaveStatus('saved');
+
+    await loadFormList();
+    document.getElementById('tool-selector').value = currentDocId;
+  } catch (e) {
+    console.error('Create tool failed:', e);
+    alert('建立失敗：' + e.message);
+  }
+}
+
+// ===== Firebase: Delete Tool =====
+async function deleteCurrentTool() {
+  if (!currentDocId) {
+    alert('請先選擇一個工具專案');
+    return;
+  }
+
+  const sel = document.getElementById('tool-selector');
+  const opt = sel.querySelector(`option[value="${currentDocId}"]`);
+  const toolName = opt ? opt.textContent : '此工具';
+
+  if (!confirm(`確定要刪除「${toolName}」嗎？此操作無法復原。`)) return;
+
+  try {
+    await db.collection(COLLECTION).doc(currentDocId).delete();
+    currentDocId = null;
+    clearForm();
+    setSaveStatus('offline');
+    await loadFormList();
+    currentStep = 0;
+    showStep(0);
+  } catch (e) {
+    console.error('Delete failed:', e);
+    alert('刪除失敗：' + e.message);
+  }
+}
+
+// ===== Clear All Form Fields =====
+function clearForm() {
+  // Text inputs and textareas
+  document.querySelectorAll('input[type="text"][data-field], textarea[data-field]').forEach(el => {
+    el.value = '';
+  });
+
+  // Radio buttons - reset to defaults
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  const defaults = { 'fe-streamlit': true, 'db-firebase': true, 'ui-yes': true };
+  for (const [id, val] of Object.entries(defaults)) {
+    const el = document.getElementById(id);
+    if (el) el.checked = val;
+  }
+
+  // Features - reset to 3 empty
+  const list = document.getElementById('feature-list');
+  list.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    const div = document.createElement('div');
+    div.className = 'feature-item';
+    div.innerHTML = `
+      <span class="num">${i}</span>
+      <input type="text" class="feature-input" placeholder="功能描述..." data-field="features">
+      <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
+    `;
+    list.appendChild(div);
+  }
+  list.querySelectorAll('.feature-input').forEach(inp => {
+    inp.addEventListener('input', () => scheduleSave());
+  });
+
+  // Reset repo
+  document.getElementById('repo-manual-toggle').checked = false;
+  document.getElementById('gh-repo-manual').style.display = 'none';
+  document.getElementById('gh-repo-manual').value = '';
+
+  // Keep gh-path default
+  document.getElementById('gh-path').value = 'SPEC.md';
+}
+
+// ===== GitHub: Fetch Repos =====
+async function fetchRepos() {
+  const token = getVal('gh-token');
+  if (!token) {
+    alert('請先輸入 GitHub Personal Access Token');
+    return;
+  }
+
+  const sel = document.getElementById('gh-repo');
+  const prevValue = sel.value;
+  sel.innerHTML = '<option value="">載入中...</option>';
+
+  try {
+    let allRepos = [];
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const res = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}&sort=updated`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`GitHub API 錯誤: ${res.status}`);
+      }
+
+      const repos = await res.json();
+      allRepos = allRepos.concat(repos);
+      hasMore = repos.length === 100;
+      page++;
+    }
+
+    sel.innerHTML = '<option value="">-- 選擇倉庫 --</option>';
+
+    allRepos.forEach(repo => {
+      const opt = document.createElement('option');
+      opt.value = repo.full_name;
+      opt.textContent = repo.full_name + (repo.private ? ' (私有)' : '');
+      sel.appendChild(opt);
+    });
+
+    // Restore previous selection if it exists
+    if (prevValue) {
+      const exists = Array.from(sel.options).some(o => o.value === prevValue);
+      if (exists) sel.value = prevValue;
+    }
+  } catch (e) {
+    console.error('Fetch repos failed:', e);
+    sel.innerHTML = '<option value="">載入失敗，請重試</option>';
+    alert('載入倉庫列表失敗：' + e.message);
+  }
+}
+
+function toggleManualRepo() {
+  const manual = document.getElementById('repo-manual-toggle').checked;
+  document.getElementById('gh-repo-manual').style.display = manual ? 'block' : 'none';
 }
 
 // ===== Markdown Generation =====
@@ -838,7 +1430,7 @@ function showStatus(type, msg) {
 
 async function pushToGitHub() {
   const token = getVal('gh-token');
-  const repo = getVal('gh-repo');
+  const repo = getRepoValue();
   const path = getVal('gh-path') || 'SPEC.md';
 
   if (!token || !repo) {
@@ -909,7 +1501,7 @@ function deobfuscate(str) {
 
 function saveGitHubSettings() {
   const token = getVal('gh-token');
-  const repo = getVal('gh-repo');
+  const repo = getRepoValue();
   if (token) localStorage.setItem('spec-gh-token', obfuscate(token));
   if (repo) localStorage.setItem('spec-gh-repo', repo);
   localStorage.setItem('spec-remember', 'true');
@@ -922,7 +1514,12 @@ function loadGitHubSettings() {
   const savedToken = localStorage.getItem('spec-gh-token');
   const savedRepo = localStorage.getItem('spec-gh-repo');
   if (savedToken) document.getElementById('gh-token').value = deobfuscate(savedToken);
-  if (savedRepo) document.getElementById('gh-repo').value = savedRepo;
+
+  // For repo, we'll try to set it after repos are fetched
+  if (savedRepo) {
+    window._savedRepo = savedRepo;
+  }
+
   document.getElementById('remember-token').checked = true;
 
   if (savedToken || savedRepo) {
@@ -960,9 +1557,79 @@ function toggleTokenVisibility() {
   }
 }
 
+// ===== Auto-Save: Attach Event Listeners =====
+function attachAutoSaveListeners() {
+  // Text inputs and textareas
+  document.querySelectorAll('input[type="text"][data-field], textarea[data-field]').forEach(el => {
+    el.addEventListener('input', () => scheduleSave());
+  });
+
+  // Radio buttons
+  document.querySelectorAll('input[type="radio"][data-field]').forEach(el => {
+    el.addEventListener('change', () => scheduleSave());
+  });
+
+  // Feature inputs (initial ones)
+  document.querySelectorAll('.feature-input').forEach(inp => {
+    inp.addEventListener('input', () => scheduleSave());
+  });
+
+  // GitHub settings also trigger save
+  document.getElementById('gh-repo').addEventListener('change', () => scheduleSave());
+  document.getElementById('gh-repo-manual').addEventListener('input', () => scheduleSave());
+  document.getElementById('gh-path').addEventListener('input', () => scheduleSave());
+}
+
+// ===== Modal: Enter key support =====
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('new-tool-modal').classList.contains('active')) {
+    createNewTool();
+  }
+  if (e.key === 'Escape' && document.getElementById('new-tool-modal').classList.contains('active')) {
+    hideNewToolModal();
+  }
+});
+
 // ===== Initialize =====
-updateProgress();
-loadGitHubSettings();
+async function init() {
+  updateProgress();
+  loadGitHubSettings();
+  attachAutoSaveListeners();
+
+  // Load tool list from Firebase
+  await loadFormList();
+
+  // Auto-fetch repos if token exists
+  const token = getVal('gh-token');
+  if (token) {
+    fetchRepos().then(() => {
+      // Restore saved repo selection
+      if (window._savedRepo) {
+        const sel = document.getElementById('gh-repo');
+        const exists = Array.from(sel.options).some(o => o.value === window._savedRepo);
+        if (exists) {
+          sel.value = window._savedRepo;
+        } else {
+          // Fall back to manual input
+          document.getElementById('repo-manual-toggle').checked = true;
+          document.getElementById('gh-repo-manual').style.display = 'block';
+          document.getElementById('gh-repo-manual').value = window._savedRepo;
+        }
+      }
+    });
+  }
+
+  // Check if there are existing tools; if not, prompt to create
+  const sel = document.getElementById('tool-selector');
+  if (sel.options.length <= 1) {
+    // No tools yet, show modal
+    showNewToolModal();
+  }
+
+  setSaveStatus('saved');
+}
+
+init();
 </script>
 </body>
 </html>
