@@ -613,22 +613,22 @@
       </div>
     </div>
     <div class="field-group">
-      <div class="field-label">輸入檔案格式</div>
+      <div class="field-label">輸入檔案格式（可複選）</div>
       <div class="radio-group">
         <div class="radio-option">
-          <input type="radio" name="input-format" id="fmt-xlsx" value=".xlsx" data-field="inputFormat">
+          <input type="checkbox" id="fmt-xlsx" value=".xlsx" data-field="inputFormat">
           <label for="fmt-xlsx">.xlsx</label>
         </div>
         <div class="radio-option">
-          <input type="radio" name="input-format" id="fmt-csv" value=".csv" data-field="inputFormat">
+          <input type="checkbox" id="fmt-csv" value=".csv" data-field="inputFormat">
           <label for="fmt-csv">.csv</label>
         </div>
         <div class="radio-option">
-          <input type="radio" name="input-format" id="fmt-manual" value="手動輸入" data-field="inputFormat">
+          <input type="checkbox" id="fmt-manual" value="手動輸入" data-field="inputFormat">
           <label for="fmt-manual">手動輸入</label>
         </div>
         <div class="radio-option">
-          <input type="radio" name="input-format" id="fmt-other" value="其他" data-field="inputFormat">
+          <input type="checkbox" id="fmt-other" value="其他" data-field="inputFormat">
           <label for="fmt-other">其他</label>
         </div>
       </div>
@@ -962,6 +962,11 @@ function getRadio(name) {
   return el ? el.value : '';
 }
 
+function getCheckboxValues(fieldName) {
+  const checked = document.querySelectorAll(`input[type="checkbox"][data-field="${fieldName}"]:checked`);
+  return Array.from(checked).map(el => el.value);
+}
+
 function getFeatures() {
   const inputs = document.querySelectorAll('.feature-input');
   const features = [];
@@ -990,7 +995,7 @@ function collectFormData() {
     inputSpec: getVal('input-spec'),
     outputSpec: getVal('output-spec'),
     successDef: getVal('success-def'),
-    inputFormat: getRadio('input-format'),
+    inputFormat: getCheckboxValues('inputFormat'),
     inputFields: getVal('input-fields'),
     outputFormat: getRadio('output-format'),
     calcLogic: getVal('calc-logic'),
@@ -1032,7 +1037,6 @@ function restoreFormData(data) {
 
   // Radio buttons
   const radioMap = {
-    'input-format': 'inputFormat',
     'output-format': 'outputFormat',
     'frontend': 'frontend',
     'database': 'database',
@@ -1044,6 +1048,13 @@ function restoreFormData(data) {
       const radio = document.querySelector(`input[name="${name}"][value="${data[key]}"]`);
       if (radio) radio.checked = true;
     }
+  }
+
+  // Checkboxes (inputFormat is multi-select)
+  if (data.inputFormat && Array.isArray(data.inputFormat)) {
+    document.querySelectorAll('input[type="checkbox"][data-field="inputFormat"]').forEach(cb => {
+      cb.checked = data.inputFormat.includes(cb.value);
+    });
   }
 
   // Features
@@ -1228,8 +1239,9 @@ function clearForm() {
     el.value = '';
   });
 
-  // Radio buttons - reset to defaults
+  // Radio buttons & checkboxes - reset to defaults
   document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[type="checkbox"][data-field="inputFormat"]').forEach(cb => cb.checked = false);
   const defaults = { 'fe-streamlit': true, 'db-firebase': true, 'ui-yes': true };
   for (const [id, val] of Object.entries(defaults)) {
     const el = document.getElementById(id);
@@ -1348,7 +1360,7 @@ function generateMarkdown() {
 ## Phase 1：規格設計
 
 ### 1.1 資料格式規格
-- **輸入檔案格式**：${getRadio('input-format') || '（未選擇）'}
+- **輸入檔案格式**：${getCheckboxValues('inputFormat').join('、') || '（未選擇）'}
 - **輸入欄位定義**：
 ${getVal('input-fields') ? getVal('input-fields').split('\n').map(l => `  - ${l}`).join('\n') : '  （未填寫）'}
 - **輸出格式**：${getRadio('output-format') || '（未選擇）'}
@@ -1564,8 +1576,8 @@ function attachAutoSaveListeners() {
     el.addEventListener('input', () => scheduleSave());
   });
 
-  // Radio buttons
-  document.querySelectorAll('input[type="radio"][data-field]').forEach(el => {
+  // Radio buttons and checkboxes
+  document.querySelectorAll('input[type="radio"][data-field], input[type="checkbox"][data-field]').forEach(el => {
     el.addEventListener('change', () => scheduleSave());
   });
 
