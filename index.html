@@ -517,11 +517,13 @@
         <div id="openrouter-model-section" style="display:none" class="mt-8">
           <div class="field-label" style="font-size:13px">模型選擇</div>
           <select class="form-select" id="openrouter-model">
-            <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free（預設）</option>
-            <option value="google/gemini-2.0-flash-exp:free">google/gemini-2.0-flash-exp:free</option>
-            <option value="mistralai/mistral-7b-instruct:free">mistralai/mistral-7b-instruct:free</option>
-            <option value="deepseek/deepseek-r1:free">deepseek/deepseek-r1:free</option>
+            <option value="google/gemma-3n-e4b-it:free">google/gemma-3n-e4b-it:free（預設，穩定）</option>
+            <option value="nvidia/nemotron-nano-9b-v2:free">nvidia/nemotron-nano-9b-v2:free</option>
+            <option value="stepfun/step-3.5-flash:free">stepfun/step-3.5-flash:free</option>
+            <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free</option>
+            <option value="openrouter/free">openrouter/free（自動選擇）</option>
           </select>
+          <div style="font-size:11px;color:#999;margin-top:4px">若選擇的模型被限流，會自動嘗試其他免費模型</div>
         </div>
         <button class="test-connection-btn" onclick="testAIConnection()">&#128270; 測試連線</button>
         <div id="ai-test-result" class="mt-8" style="font-size:13px"></div>

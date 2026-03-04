@@ -850,19 +850,26 @@ async function callAI(prompt) {
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
     case 'openrouter': {
-      const model = localStorage.getItem('openrouterModel') || 'meta-llama/llama-3.3-70b-instruct:free';
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://tedus-ai.github.io/tool-spec-form/',
-        },
-        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 4096 })
-      });
-      if (!res.ok) throw new Error(`OpenRouter API 錯誤: ${res.status}`);
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
+      const model = localStorage.getItem('openrouterModel') || 'google/gemma-3n-e4b-it:free';
+      const fallbackModels = ['google/gemma-3n-e4b-it:free', 'nvidia/nemotron-nano-9b-v2:free', 'stepfun/step-3.5-flash:free', 'openrouter/free'];
+      const modelsToTry = [model, ...fallbackModels.filter(m => m !== model)];
+      for (const tryModel of modelsToTry) {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://tedus-ai.github.io/tool-spec-form/',
+          },
+          body: JSON.stringify({ model: tryModel, messages: [{ role: 'user', content: prompt }], max_tokens: 4096 })
+        });
+        if (res.status === 429) continue;
+        if (!res.ok) throw new Error(`OpenRouter API 錯誤: ${res.status}`);
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) return content;
+      }
+      throw new Error('OpenRouter: 所有免費模型都被限流，請稍後再試');
     }
     case 'groq': {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
