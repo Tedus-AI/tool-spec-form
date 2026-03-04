@@ -840,29 +840,43 @@ async function callAI(prompt) {
 
   switch (provider) {
     case 'gemini': {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      });
-      if (!res.ok) throw new Error(`Gemini API 錯誤: ${res.status}`);
-      const data = await res.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
+      let lastErr = null;
+      for (const gModel of geminiModels) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (res.status === 429) { lastErr = '429 速率限制，稍後再試'; continue; }
+        if (res.status === 403) throw new Error('Gemini API Key 無權限（403）。請到 Google AI Studio 重新產生 Key，或確認已啟用 Generative Language API');
+        if (!res.ok) throw new Error(`Gemini API 錯誤: ${res.status}`);
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      }
+      throw new Error(`Gemini: ${lastErr || '所有模型都失敗'}`);
     }
     case 'openrouter': {
-      const model = localStorage.getItem('openrouterModel') || 'meta-llama/llama-3.3-70b-instruct:free';
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://tedus-ai.github.io/tool-spec-form/',
-        },
-        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 4096 })
-      });
-      if (!res.ok) throw new Error(`OpenRouter API 錯誤: ${res.status}`);
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
+      const model = localStorage.getItem('openrouterModel') || 'google/gemma-3n-e4b-it:free';
+      const fallbackModels = ['google/gemma-3n-e4b-it:free', 'nvidia/nemotron-nano-9b-v2:free', 'stepfun/step-3.5-flash:free', 'openrouter/free'];
+      const modelsToTry = [model, ...fallbackModels.filter(m => m !== model)];
+      for (const tryModel of modelsToTry) {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://tedus-ai.github.io/tool-spec-form/',
+          },
+          body: JSON.stringify({ model: tryModel, messages: [{ role: 'user', content: prompt }], max_tokens: 4096 })
+        });
+        if (res.status === 429) continue;
+        if (!res.ok) throw new Error(`OpenRouter API 錯誤: ${res.status}`);
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) return content;
+      }
+      throw new Error('OpenRouter: 所有免費模型都被限流，請稍後再試');
     }
     case 'groq': {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
