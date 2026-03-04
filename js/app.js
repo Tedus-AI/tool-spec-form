@@ -338,6 +338,7 @@ function collectFormData() {
   // Phase 0
   const phase0 = {
     toolName: getVal('f-toolName'),
+    repoName: getVal('f-repoName'),
     oneLiner: getVal('f-oneLiner'),
     users: getVal('f-users'),
     trigger: getVal('f-trigger'),
@@ -421,6 +422,7 @@ function restoreFormData(data) {
   if (data.phase0) {
     const p = data.phase0;
     setVal('f-toolName', p.toolName);
+    setVal('f-repoName', p.repoName);
     setVal('f-oneLiner', p.oneLiner);
     setVal('f-users', p.users);
     setVal('f-trigger', p.trigger);
@@ -1028,7 +1030,7 @@ function applyAIData(phaseNum, aiData) {
   // Map AI data to form fields with AI draft marking
   if (phaseNum === 0) {
     const fieldMap = {
-      toolName: 'f-toolName', oneLiner: 'f-oneLiner', users: 'f-users',
+      toolName: 'f-toolName', repoName: 'f-repoName', oneLiner: 'f-oneLiner', users: 'f-users',
       trigger: 'f-trigger', inputSpec: 'f-inputSpec', outputSpec: 'f-outputSpec',
       successDef: 'f-successDef'
     };
@@ -1730,10 +1732,10 @@ async function pushToGitHub() {
 
   const formData = collectFormData();
   const toolName = formData.phase0.toolName || '未命名工具';
-  const repoName = toolName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+  const repoName = (formData.phase0.repoName || toolName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')).trim();
 
-  if (!repoName) {
-    showStatus('error', '工具名稱無效，無法建立 Repo');
+  if (!repoName || !/^[a-zA-Z0-9\-]+$/.test(repoName)) {
+    showStatus('error', 'GitHub Repo 名稱無效，請回到 Phase 0 填寫（僅限英文、數字、連字號）');
     return;
   }
 
@@ -1876,6 +1878,17 @@ function attachAutoSaveListeners() {
       // Trigger AI suggestion for Phase 0
       if (el.dataset.phase === '0' && (el.dataset.key === 'toolName' || el.dataset.key === 'oneLiner')) {
         triggerAISuggestion();
+      }
+      // Auto-generate repoName from toolName if repoName is empty or was auto-generated
+      if (el.dataset.key === 'toolName') {
+        const repoEl = document.getElementById('f-repoName');
+        if (repoEl && !repoEl.dataset.manualEdit) {
+          repoEl.value = el.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+        }
+      }
+      // Mark repoName as manually edited to stop auto-generation
+      if (el.dataset.key === 'repoName') {
+        el.dataset.manualEdit = 'true';
       }
       // Remove AI draft class on manual edit
       el.classList.remove('ai-draft-field');
