@@ -129,7 +129,25 @@ function showPhase(phase) {
   if (phase === 6) generatePreview();
 }
 
+function validatePhase(phase) {
+  if (phase === 0) {
+    const toolName = getVal('f-toolName');
+    const oneLiner = getVal('f-oneLiner');
+    if (!toolName || !oneLiner) {
+      const missing = [];
+      if (!toolName) missing.push('工具名稱');
+      if (!oneLiner) missing.push('工具概述');
+      alert(`請先填寫必填欄位：${missing.join('、')}`);
+      if (!toolName) document.getElementById('f-toolName').focus();
+      else document.getElementById('f-oneLiner').focus();
+      return false;
+    }
+  }
+  return true;
+}
+
 function nextPhase() {
+  if (!validatePhase(currentPhase)) return;
   if (currentPhase === TOTAL_PHASES - 1) {
     pushToGitHub();
     return;
@@ -944,6 +962,20 @@ async function testAIConnection() {
 // ===================================================================
 
 async function aiFillPhase(phaseNum) {
+  // Phase 0: require toolName & oneLiner before AI fill
+  if (phaseNum === 0) {
+    const toolName = getVal('f-toolName');
+    const oneLiner = getVal('f-oneLiner');
+    if (!toolName || !oneLiner) {
+      const missing = [];
+      if (!toolName) missing.push('工具名稱');
+      if (!oneLiner) missing.push('工具概述');
+      alert(`請先填寫必填欄位：${missing.join('、')}，AI 才能根據你的描述自動填入其他欄位`);
+      if (!toolName) document.getElementById('f-toolName').focus();
+      else document.getElementById('f-oneLiner').focus();
+      return;
+    }
+  }
   const btn = document.getElementById(`ai-fill-${phaseNum}`);
   if (!btn) return;
   const origText = btn.innerHTML;
@@ -956,7 +988,7 @@ async function aiFillPhase(phaseNum) {
     const filledFields = formData[phaseKey] || {};
 
     const phaseFieldDefs = {
-      0: ['toolName（工具名稱）', 'oneLiner（一句話描述）', 'users（使用者）', 'trigger（觸發情境）', 'inputSpec（輸入）', 'outputSpec（輸出）', 'successDef（成功定義）'],
+      0: ['toolName（工具名稱）', 'oneLiner（工具概述）', 'users（使用者）', 'trigger（觸發情境）', 'inputSpec（輸入）', 'outputSpec（輸出）', 'successDef（成功定義）'],
       1: ['inputFormat（輸入格式）', 'inputFields（輸入欄位定義）', 'outputFormat（輸出格式）', 'calcLogic（計算邏輯）', 'boundary（邊界條件）', 'limits（限制與假設）'],
       2: ['frontend（前端框架）', 'database（資料庫）', 'uiNeed（UI需求）', 'features（功能拆解清單）'],
       4: ['testCases（測試案例）', 'boundaryTest（邊界值測試）', 'knownLimitations（已知限制）'],
@@ -970,7 +1002,8 @@ Phase 0 需求定義：${JSON.stringify(formData.phase0)}
 Phase 1 規格設計：${JSON.stringify(formData.phase1)}
 Phase 2 技術架構：${JSON.stringify(formData.phase2)}
 
-請補全 Phase ${phaseNum} 的以下欄位（只輸出 JSON，不要說明文字）：
+使用者在「工具概述」中描述了他們的工具構想：「${formData.phase0?.oneLiner || ''}」
+請根據這段概述，拆解並補全 Phase ${phaseNum} 的以下欄位（只輸出 JSON，不要說明文字）：
 ${(phaseFieldDefs[phaseNum] || []).join(', ')}
 
 輸出格式：一個 JSON 物件，key 為欄位英文名。`;
@@ -1533,7 +1566,7 @@ function generateMarkdown() {
 
 ## Phase 0：需求定義
 
-- **一句話描述**：${p0.oneLiner || '（未填寫）'}
+- **工具概述**：${p0.oneLiner || '（未填寫）'}
 - **使用者**：${p0.users || '（未填寫）'}
 - **觸發情境**：${p0.trigger || '（未填寫）'}
 - **輸入**：${p0.inputSpec || '（未填寫）'}

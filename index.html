@@ -78,14 +78,14 @@
         </div>
         <button class="ai-fill-btn" onclick="aiFillPhase(0)" id="ai-fill-0">&#10024; AI 幫我填這頁</button>
         <div class="field-group">
-          <div class="field-label">工具名稱</div>
+          <div class="field-label">工具名稱 <span class="required-mark">*必填</span></div>
           <div class="field-hint">用 2–4 個字命名這個工具</div>
-          <input type="text" id="f-toolName" placeholder="例如：熱阻計算器、BOM生成工具" data-phase="0" data-key="toolName">
+          <input type="text" id="f-toolName" placeholder="例如：熱阻計算器、BOM生成工具" data-phase="0" data-key="toolName" required>
         </div>
         <div class="field-group">
-          <div class="field-label">一句話描述</div>
-          <div class="field-hint">填入下方句型，幫助你釐清工具的核心價值</div>
-          <textarea id="f-oneLiner" rows="2" placeholder="這個工具讓 熱流工程師 可以透過 輸入功耗與材料參數，快速得到 熱阻分析報告" data-phase="0" data-key="oneLiner"></textarea>
+          <div class="field-label">工具概述 <span class="required-mark">*必填</span></div>
+          <div class="field-hint">請描述你想像中的工具內容，AI 會根據這段描述自動拆解並填入後續欄位</div>
+          <textarea id="f-oneLiner" rows="3" placeholder="例如：我想做一個給熱流工程師用的計算器，讓他們輸入功耗、材料參數和散熱片尺寸後，自動計算熱阻並產出分析報告，最好能匯出 PDF 給客戶" data-phase="0" data-key="oneLiner" required></textarea>
         </div>
         <div class="field-group">
           <div class="field-label">使用者</div>
