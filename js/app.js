@@ -37,6 +37,7 @@ let isLoading = false;
 let selectedSkills = [];
 let parsedSkillFiles = [];
 let allSkillsFromRepo = [];
+let referenceFiles = []; // Parsed reference files for AI context
 
 // ===================================================================
 // SIDEBAR & NAVIGATION
@@ -1005,7 +1006,8 @@ Phase 1 規格設計：${JSON.stringify(formData.phase1)}
 Phase 2 技術架構：${JSON.stringify(formData.phase2)}
 
 使用者在「工具概述」中描述了他們的工具構想：「${formData.phase0?.oneLiner || ''}」
-請根據這段概述，拆解並補全 Phase ${phaseNum} 的以下欄位（只輸出 JSON，不要說明文字）：
+${buildRefFileContext()}
+請根據這段概述${referenceFiles.length > 0 ? '以及使用者提供的參考檔案' : ''}，拆解並補全 Phase ${phaseNum} 的以下欄位（只輸出 JSON，不要說明文字）：
 ${(phaseFieldDefs[phaseNum] || []).join(', ')}
 
 輸出格式：一個 JSON 物件，key 為欄位英文名。`;
@@ -1111,7 +1113,7 @@ function triggerAISuggestion() {
       const prompt = `根據以下工具資訊，簡短建議：
 工具名稱：${toolName}
 描述：${oneLiner}
-
+${buildRefFileContext()}
 請用 JSON 格式回答：
 {"users":"可能的使用者","scenarios":"常見觸發情境","inputs":"建議的輸入欄位"}
 只輸出 JSON，不要其他文字。`;
@@ -1312,6 +1314,138 @@ async function saveManualSkill() {
     alert('儲存失敗：' + e.message);
   }
 }
+
+// ===================================================================
+// REFERENCE FILES: Upload & Parse for AI Context
+// ===================================================================
+
+const MAX_REF_FILES = 3;
+const MAX_REF_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const REF_CONTENT_LIMIT = 8000; // Max chars per file sent to AI
+
+function handleRefFiles(fileList) {
+  const files = Array.from(fileList);
+  if (referenceFiles.length + files.length > MAX_REF_FILES) {
+    alert(`最多只能上傳 ${MAX_REF_FILES} 個參考檔案`);
+    return;
+  }
+  files.forEach(file => {
+    if (file.size > MAX_REF_FILE_SIZE) {
+      alert(`檔案 "${file.name}" 超過 5MB 限制，已跳過`);
+      return;
+    }
+    parseRefFile(file);
+  });
+  // Reset input so same file can be re-uploaded
+  document.getElementById('ref-file-input').value = '';
+}
+
+async function parseRefFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  let content = '';
+  let sheetNames = [];
+
+  try {
+    if (ext === 'xlsx' || ext === 'xls') {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      sheetNames = workbook.SheetNames;
+      const parts = [];
+      workbook.SheetNames.forEach(name => {
+        const sheet = workbook.Sheets[name];
+        const csv = XLSX.utils.sheet_to_csv(sheet);
+        parts.push(`[工作表: ${name}]\n${csv}`);
+      });
+      content = parts.join('\n\n');
+    } else if (ext === 'csv' || ext === 'tsv') {
+      content = await file.text();
+    } else {
+      // txt, json, md
+      content = await file.text();
+    }
+
+    // Truncate if too long
+    if (content.length > REF_CONTENT_LIMIT) {
+      content = content.substring(0, REF_CONTENT_LIMIT) + '\n... (內容過長，已截斷)';
+    }
+
+    referenceFiles.push({
+      name: file.name,
+      ext: ext,
+      size: file.size,
+      sheetNames: sheetNames,
+      content: content
+    });
+
+    renderRefFileList();
+  } catch (e) {
+    alert(`解析檔案 "${file.name}" 失敗：${e.message}`);
+  }
+}
+
+function removeRefFile(index) {
+  referenceFiles.splice(index, 1);
+  renderRefFileList();
+}
+
+function previewRefFile(index) {
+  const file = referenceFiles[index];
+  const modal = document.getElementById('skill-preview-modal');
+  document.getElementById('skill-preview-title').textContent = `參考檔案：${file.name}`;
+  document.getElementById('skill-preview-content').textContent = file.content;
+  showModal('skill-preview-modal');
+}
+
+function renderRefFileList() {
+  const container = document.getElementById('ref-file-list');
+  const zone = document.getElementById('ref-upload-zone');
+
+  if (referenceFiles.length === 0) {
+    container.innerHTML = '';
+    zone.classList.remove('has-files');
+    return;
+  }
+
+  zone.classList.add('has-files');
+  const iconMap = { xlsx: '\uD83D\uDCCA', xls: '\uD83D\uDCCA', csv: '\uD83D\uDCCB', tsv: '\uD83D\uDCCB', txt: '\uD83D\uDCC4', json: '\uD83D\uDD27', md: '\uD83D\uDCDD' };
+
+  container.innerHTML = referenceFiles.map((f, i) => {
+    const icon = iconMap[f.ext] || '\uD83D\uDCC1';
+    const sizeStr = f.size < 1024 ? `${f.size} B` : f.size < 1024 * 1024 ? `${(f.size / 1024).toFixed(1)} KB` : `${(f.size / (1024 * 1024)).toFixed(1)} MB`;
+    const sheets = f.sheetNames.length > 0 ? ` (${f.sheetNames.length} 個工作表)` : '';
+    return `<div class="ref-file-item">
+      <span class="ref-file-icon">${icon}</span>
+      <span class="ref-file-name">${escapeHtml(f.name)}</span>
+      <span class="ref-file-info">${sizeStr}${sheets}</span>
+      <button class="ref-file-preview-btn" onclick="previewRefFile(${i})">預覽</button>
+      <button class="ref-file-remove" onclick="removeRefFile(${i})">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+// Build reference file context string for AI prompts
+function buildRefFileContext() {
+  if (referenceFiles.length === 0) return '';
+  const parts = referenceFiles.map(f => {
+    return `【參考檔案：${f.name}】\n${f.content}`;
+  });
+  return '\n\n===== 使用者提供的參考檔案 =====\n' +
+    '以下是使用者上傳的參考檔案內容，請參考這些資料中的欄位名稱、格式、數值範圍、計算邏輯等資訊來填寫規格：\n\n' +
+    parts.join('\n\n');
+}
+
+// Drag & drop for reference file upload zone
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('ref-upload-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    handleRefFiles(e.dataTransfer.files);
+  });
+});
 
 // ===================================================================
 // SKILLS: .skill File Import
@@ -1691,7 +1825,8 @@ async function aiOrganizeSpec() {
   - 第一步從哪裡開始
   - 需要特別注意的技術細節
 
-表單資料：${JSON.stringify(formData, null, 2)}`;
+表單資料：${JSON.stringify(formData, null, 2)}
+${buildRefFileContext()}`;
 
     const result = await callAI(prompt);
     document.getElementById('preview-content').textContent = result;
