@@ -333,7 +333,7 @@ function collectFormData() {
   const phase1 = {
     inputFormat: Array.from(inputFormatEls).map(el => el.value),
     inputFields: getVal('f-inputFields'),
-    outputFormat: getRadio('outputFormat'),
+    outputFormat: Array.from(document.querySelectorAll('input[data-key="outputFormat"]:checked')).map(el => el.value),
     calcLogic: getVal('f-calcLogic'),
     boundary: getVal('f-boundary'),
     limits: getVal('f-limits'),
@@ -382,7 +382,7 @@ function collectFormData() {
 
   // Phase 5
   const phase5 = {
-    deployPlatform: getRadio('deployPlatform'),
+    deployPlatform: Array.from(document.querySelectorAll('input[data-key="deployPlatform"]:checked')).map(el => el.value),
     updateFreq: getRadio('updateFreq'),
     accessLevel: getRadio('accessLevel'),
     notifyMethod: getRadio('notifyMethod'),
@@ -419,7 +419,10 @@ function restoreFormData(data) {
       cb.checked = p.inputFormat && p.inputFormat.includes(cb.value);
     });
     setVal('f-inputFields', p.inputFields);
-    setRadio('outputFormat', p.outputFormat);
+    // outputFormat checkboxes
+    document.querySelectorAll('input[data-key="outputFormat"]').forEach(cb => {
+      cb.checked = p.outputFormat && p.outputFormat.includes(cb.value);
+    });
     setVal('f-calcLogic', p.calcLogic);
     setVal('f-boundary', p.boundary);
     setVal('f-limits', p.limits);
@@ -471,7 +474,10 @@ function restoreFormData(data) {
   // Phase 5
   if (data.phase5) {
     const p = data.phase5;
-    setRadio('deployPlatform', p.deployPlatform);
+    // deployPlatform checkboxes
+    document.querySelectorAll('input[data-key="deployPlatform"]').forEach(cb => {
+      cb.checked = p.deployPlatform && p.deployPlatform.includes(cb.value);
+    });
     setRadio('updateFreq', p.updateFreq);
     setRadio('accessLevel', p.accessLevel);
     setRadio('notifyMethod', p.notifyMethod);
@@ -1012,7 +1018,12 @@ function applyAIData(phaseNum, aiData) {
         el.classList.add('ai-draft-field');
       }
     }
-    if (aiData.outputFormat) setRadio('outputFormat', aiData.outputFormat);
+    if (aiData.outputFormat) {
+      const formats = Array.isArray(aiData.outputFormat) ? aiData.outputFormat : [aiData.outputFormat];
+      document.querySelectorAll('input[data-key="outputFormat"]').forEach(cb => {
+        if (formats.includes(cb.value)) cb.checked = true;
+      });
+    }
   } else if (phaseNum === 2) {
     if (aiData.frontend) setRadio('frontend', aiData.frontend);
     if (aiData.database) setRadio('database', aiData.database);
@@ -1040,7 +1051,12 @@ function applyAIData(phaseNum, aiData) {
       aiData.testCases.forEach(tc => addTestCase(tc.input, tc.expected, tc.status));
     }
   } else if (phaseNum === 5) {
-    if (aiData.deployPlatform) setRadio('deployPlatform', aiData.deployPlatform);
+    if (aiData.deployPlatform) {
+      const platforms = Array.isArray(aiData.deployPlatform) ? aiData.deployPlatform : [aiData.deployPlatform];
+      document.querySelectorAll('input[data-key="deployPlatform"]').forEach(cb => {
+        if (platforms.includes(cb.value)) cb.checked = true;
+      });
+    }
     if (aiData.updateFreq) setRadio('updateFreq', aiData.updateFreq);
     if (aiData.accessLevel) setRadio('accessLevel', aiData.accessLevel);
     if (aiData.notifyMethod) setRadio('notifyMethod', aiData.notifyMethod);
@@ -1532,7 +1548,7 @@ function generateMarkdown() {
 - **輸入檔案格式**：${(p1.inputFormat || []).join('、') || '（未選擇）'}
 - **輸入欄位定義**：
 ${p1.inputFields ? p1.inputFields.split('\n').map(l => `  - ${l}`).join('\n') : '  （未填寫）'}
-- **輸出格式**：${p1.outputFormat || '（未選擇）'}
+- **輸出格式**：${(p1.outputFormat || []).join('、') || '（未選擇）'}
 
 ### 1.2 計算邏輯規格
 ${p1.calcLogic || '（未填寫）'}
@@ -1582,7 +1598,7 @@ ${p4.knownLimitations || '（未填寫）'}
 
 ## Phase 5：部署計畫
 
-- **部署平台**：${p5.deployPlatform || '（未選擇）'}
+- **部署平台**：${(p5.deployPlatform || []).join('、') || '（未選擇）'}
 - **更新維護頻率**：${p5.updateFreq || '（未選擇）'}
 - **使用權限**：${p5.accessLevel || '（未選擇）'}
 - **部署後通知方式**：${p5.notifyMethod || '（未選擇）'}
@@ -1807,7 +1823,7 @@ ${skillList || '   （無選擇的 Skill）'}
 - 前端框架：${p2.frontend || '（未選擇）'}
 - 資料庫：${p2.database || '（未選擇）'}
 - 介面需求：${p2.uiNeed || '（未選擇）'}
-- 部署平台：${p5.deployPlatform || '（未選擇）'}
+- 部署平台：${(p5.deployPlatform || []).join('、') || '（未選擇）'}
 
 ## 注意事項
 ${formData.phase1.limits || '（未填寫）'}
