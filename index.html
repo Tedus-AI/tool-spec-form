@@ -2,1650 +2,594 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>工具開發規格填寫表</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Noto Sans TC', -apple-system, sans-serif;
-    background: #F7F5F2;
-    color: #1A1A1A;
-    min-height: 100vh;
-  }
-  .top-bar {
-    background: #1A1A1A;
-    padding: 12px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .top-bar h1 {
-    color: #FFF;
-    font-size: 18px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  .top-bar .save-status {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    transition: all 0.3s;
-  }
-  .save-status.saved {
-    background: #2D9B6E;
-    color: #FFF;
-  }
-  .save-status.saving {
-    background: #E8725A;
-    color: #FFF;
-  }
-  .save-status.offline {
-    background: #555;
-    color: #AAA;
-  }
-
-  /* Tool Switcher Bar */
-  .tool-switcher {
-    background: #2A2A2A;
-    padding: 10px 24px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: sticky;
-    top: 44px;
-    z-index: 99;
-    border-bottom: 1px solid #444;
-  }
-  .tool-switcher select {
-    flex: 1;
-    max-width: 400px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid #555;
-    background: #333;
-    color: #FFF;
-    font-size: 14px;
-    font-family: inherit;
-    cursor: pointer;
-  }
-  .tool-switcher select option {
-    background: #FFF;
-    color: #1A1A1A;
-  }
-  .tool-switcher select:focus {
-    border-color: #2D9B6E;
-    outline: none;
-  }
-  .tool-switcher button {
-    padding: 8px 16px;
-    border-radius: 8px;
-    border: 1px solid #555;
-    background: #333;
-    color: #CCC;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-  }
-  .tool-switcher button:hover {
-    background: #444;
-    border-color: #666;
-  }
-  .tool-switcher .btn-new {
-    background: #2D9B6E;
-    border-color: #2D9B6E;
-    color: #FFF;
-  }
-  .tool-switcher .btn-new:hover {
-    background: #258C5F;
-  }
-  .tool-switcher .btn-delete {
-    color: #E8725A;
-    border-color: #E8725A40;
-  }
-  .tool-switcher .btn-delete:hover {
-    background: #E8725A20;
-    border-color: #E8725A;
-  }
-
-  /* Modal overlay */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.active {
-    display: flex;
-  }
-  .modal-box {
-    background: #FFF;
-    border-radius: 16px;
-    padding: 32px;
-    width: 90%;
-    max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  .modal-box h2 {
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 8px;
-  }
-  .modal-box p {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 20px;
-  }
-  .modal-box input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #E0E0E0;
-    border-radius: 10px;
-    font-size: 15px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .modal-box input:focus {
-    border-color: #2D9B6E;
-  }
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    justify-content: flex-end;
-  }
-  .modal-actions button {
-    padding: 10px 24px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-  }
-  .modal-actions .btn-cancel {
-    background: #F0F0F0;
-    color: #666;
-  }
-  .modal-actions .btn-confirm {
-    background: #2D9B6E;
-    color: #FFF;
-  }
-  .modal-actions .btn-confirm:hover {
-    background: #258C5F;
-  }
-
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px 16px 80px;
-  }
-
-
-  /* Progress bar */
-  .progress-wrap {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 32px;
-    padding: 0 4px;
-  }
-  .progress-step {
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    background: #DDD;
-    transition: background 0.4s ease;
-  }
-  .progress-step.done { background: #2D9B6E; }
-  .progress-step.active { background: #E8725A; }
-  /* Phase sections */
-  .phase-section {
-    margin-bottom: 28px;
-    animation: fadeIn 0.3s ease;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .phase-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .phase-num {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFF;
-    font-size: 18px;
-    font-weight: 800;
-    flex-shrink: 0;
-  }
-  .phase-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-  }
-  .phase-name {
-    font-size: 22px;
-    font-weight: 800;
-  }
-  /* Form elements */
-  .field-group {
-    background: #FFF;
-    border: 1px solid #E8E8E8;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 14px;
-    transition: border-color 0.2s ease;
-  }
-  .field-group:focus-within {
-    border-color: #2D9B6E;
-    box-shadow: 0 0 0 3px rgba(45,155,110,0.08);
-  }
-  .field-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1A1A1A;
-    margin-bottom: 4px;
-  }
-  .field-hint {
-    font-size: 12px;
-    color: #999;
-    margin-bottom: 10px;
-  }
-  input[type="text"],
-  input[type="password"],
-  textarea,
-  select {
-    width: 100%;
-    border: 1px solid #E0E0E0;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 14px;
-    font-family: inherit;
-    color: #333;
-    background: #FAFAFA;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-  input:focus, textarea:focus, select:focus {
-    border-color: #2D9B6E;
-    background: #FFF;
-  }
-  textarea {
-    resize: vertical;
-    min-height: 70px;
-  }
-  .radio-group {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .radio-option {
-    flex: 1;
-    min-width: 120px;
-  }
-  .radio-option input { display: none; }
-  .radio-option label {
-    display: block;
-    padding: 10px 16px;
-    border: 2px solid #E5E5E5;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .radio-option input:checked + label {
-    border-color: #2D9B6E;
-    background: #EDFAF3;
-    color: #2D9B6E;
-  }
-  /* Feature list builder */
-  .feature-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .feature-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .feature-item .num {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #F0F0F0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: #888;
-    flex-shrink: 0;
-  }
-  .feature-item input { flex: 1; }
-  .feature-item .remove-feature-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid #E0E0E0;
-    background: #FFF;
-    color: #CCC;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-  .feature-item .remove-feature-btn:hover {
-    border-color: #E8725A;
-    color: #E8725A;
-    background: #FFF0ED;
-  }
-  .add-feature-btn {
-    margin-top: 8px;
-    padding: 8px 16px;
-    border: 1px dashed #CCC;
-    border-radius: 8px;
-    background: transparent;
-    color: #999;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .add-feature-btn:hover {
-    border-color: #2D9B6E;
-    color: #2D9B6E;
-  }
-  /* Navigation */
-  .nav-bar {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 24px;
-    gap: 12px;
-  }
-  .btn {
-    padding: 12px 28px;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-  }
-  .btn-secondary {
-    background: #FFF;
-    border: 1px solid #DDD;
-    color: #666;
-  }
-  .btn-primary {
-    background: #2D9B6E;
-    color: #FFF;
-  }
-  .btn-primary:hover { background: #258C5F; }
-  .btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-  /* GitHub config section */
-  .github-config {
-    background: #1A1A1A;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 14px;
-  }
-  .github-config .field-label { color: #FFF; }
-  .github-config .field-hint { color: #888; }
-  .github-config input,
-  .github-config select {
-    background: #2A2A2A;
-    border-color: #444;
-    color: #FFF;
-  }
-  .github-config input:focus,
-  .github-config select:focus {
-    border-color: #2D9B6E;
-    background: #333;
-  }
-  /* Repo selector area */
-  .repo-selector-wrap {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .repo-selector-wrap select {
-    flex: 1;
-  }
-  .repo-selector-wrap button {
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid #444;
-    background: #333;
-    color: #CCC;
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .repo-selector-wrap button:hover {
-    background: #444;
-  }
-  /* Preview */
-  .preview-box {
-    background: #1A1A1A;
-    border-radius: 14px;
-    padding: 20px;
-    margin-top: 16px;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-  .preview-box pre {
-    color: #DDD;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-    white-space: pre-wrap;
-    line-height: 1.6;
-  }
-  /* Status messages */
-  .status-msg {
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    margin-top: 12px;
-    display: none;
-  }
-  .status-msg.success {
-    display: block;
-    background: #EDFAF3;
-    color: #2D9B6E;
-    border: 1px solid #2D9B6E30;
-  }
-  .status-msg.error {
-    display: block;
-    background: #FFF0ED;
-    color: #E8725A;
-    border: 1px solid #E8725A30;
-  }
-  .status-msg.loading {
-    display: block;
-    background: #EDF5FC;
-    color: #2E86C1;
-    border: 1px solid #2E86C130;
-  }
-  /* Copy button */
-  .copy-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid #444;
-    background: #333;
-    color: #CCC;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .copy-btn:hover { background: #444; }
-  .preview-wrapper {
-    position: relative;
-  }
-
-  /* Responsive */
-  @media (max-width: 480px) {
-    .radio-group { flex-direction: column; }
-    .radio-option { min-width: unset; }
-    .top-bar { flex-wrap: wrap; gap: 8px; }
-    .tool-switcher { flex-wrap: wrap; }
-  }
-</style>
+<!-- JSZip for .skill file parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
-<div class="top-bar">
-  <h1>工具開發規格表</h1>
-  <span class="save-status offline" id="save-status">未連線</span>
-</div>
+<div class="app-layout">
 
-<!-- Tool Switcher Bar -->
-<div class="tool-switcher">
-  <select id="tool-selector" onchange="onToolSelect()">
-    <option value="" disabled selected>-- 選擇工具專案 --</option>
-  </select>
-  <button class="btn-new" onclick="showNewToolModal()">+ 新增</button>
-  <button class="btn-delete" onclick="deleteCurrentTool()">刪除</button>
-</div>
+  <!-- ===== Sidebar (Project List) ===== -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>工具規格表</h1>
+      <button class="sidebar-close" id="sidebar-close-btn" onclick="closeSidebar()">&times;</button>
+    </div>
+    <button class="sidebar-new-btn" onclick="showNewProjectModal()">+ 新增專案</button>
+    <div class="project-list" id="project-list">
+      <div class="sidebar-empty" id="sidebar-empty">尚無專案，點擊上方新增</div>
+    </div>
+  </aside>
 
-<!-- New Tool Modal -->
-<div class="modal-overlay" id="new-tool-modal">
+  <!-- ===== Main Content ===== -->
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <button class="hamburger-btn" id="hamburger-btn" onclick="openSidebar()">&#9776;</button>
+        <span class="top-bar-title" id="top-bar-title">工具開發規格表</span>
+      </div>
+      <div class="top-bar-right">
+        <span class="save-status offline" id="save-status">未連線</span>
+        <button class="settings-btn" onclick="openSettings()">&#9881; <span class="settings-text">設定</span></button>
+      </div>
+    </div>
+
+    <!-- Progress Bar (Desktop/Tablet) -->
+    <div class="progress-container" id="progress-container">
+      <div class="progress-steps" id="progress-steps"></div>
+    </div>
+
+    <!-- Progress Bar (Mobile) -->
+    <div class="progress-mobile" id="progress-mobile">
+      <div class="progress-mobile-text" id="progress-mobile-text">Step 1 / 7 — 需求定義</div>
+      <div class="progress-mobile-bar">
+        <div class="progress-mobile-fill" id="progress-mobile-fill" style="width:14.28%"></div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area" id="content-area">
+
+      <!-- Empty State (no project selected) -->
+      <div class="empty-state" id="empty-state" style="display:none">
+        <h3>歡迎使用工具開發規格表</h3>
+        <p>請從左側選擇現有專案，或建立一個新的工具專案。</p>
+        <button onclick="showNewProjectModal()">+ 建立新專案</button>
+      </div>
+
+      <!-- ===== Phase 0: 需求定義 ===== -->
+      <div id="phase-0" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#E8725A">0</div>
+          <div>
+            <div class="phase-label" style="color:#E8725A">Phase 0</div>
+            <div class="phase-name">需求定義</div>
+          </div>
+        </div>
+        <button class="ai-fill-btn" onclick="aiFillPhase(0)" id="ai-fill-0">&#10024; AI 幫我填這頁</button>
+        <div class="field-group">
+          <div class="field-label">工具名稱</div>
+          <div class="field-hint">用 2–4 個字命名這個工具</div>
+          <input type="text" id="f-toolName" placeholder="例如：熱阻計算器、BOM生成工具" data-phase="0" data-key="toolName">
+        </div>
+        <div class="field-group">
+          <div class="field-label">一句話描述</div>
+          <div class="field-hint">填入下方句型，幫助你釐清工具的核心價值</div>
+          <textarea id="f-oneLiner" rows="2" placeholder="這個工具讓 熱流工程師 可以透過 輸入功耗與材料參數，快速得到 熱阻分析報告" data-phase="0" data-key="oneLiner"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">使用者</div>
+          <div class="field-hint">誰會使用？描述角色與使用頻率</div>
+          <input type="text" id="f-users" placeholder="例如：研發工程師（每週使用）、PM（偶爾查詢）" data-phase="0" data-key="users">
+        </div>
+        <div class="field-group">
+          <div class="field-label">觸發情境</div>
+          <div class="field-hint">描述一個具體場景，什麼時候會打開這個工具？</div>
+          <input type="text" id="f-trigger" placeholder="例如：收到新 BOM 表時、客戶要求提交散熱報告前" data-phase="0" data-key="trigger">
+        </div>
+        <div class="field-group">
+          <div class="field-label">輸入</div>
+          <div class="field-hint">列出需要提供的欄位、格式與單位</div>
+          <textarea id="f-inputSpec" rows="3" placeholder="例如：功耗（W，數字）、環境溫度（°C）、材料型號（文字）" data-phase="0" data-key="inputSpec"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">輸出</div>
+          <div class="field-hint">描述工具執行完後，使用者會拿到什麼</div>
+          <textarea id="f-outputSpec" rows="3" placeholder="例如：Excel 報表 + 熱阻曲線圖 + 超溫警告標記" data-phase="0" data-key="outputSpec"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">成功定義</div>
+          <div class="field-hint">設定可量化的成功指標</div>
+          <input type="text" id="f-successDef" placeholder="例如：原本需要 30 分鐘的計算縮短到 2 分鐘以內" data-phase="0" data-key="successDef">
+        </div>
+        <div id="ai-suggestion-0" class="ai-suggestion-card" style="display:none"></div>
+      </div>
+
+      <!-- ===== Phase 1: 規格設計 ===== -->
+      <div id="phase-1" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#D4852F">1</div>
+          <div>
+            <div class="phase-label" style="color:#D4852F">Phase 1</div>
+            <div class="phase-name">規格設計</div>
+          </div>
+        </div>
+        <button class="ai-fill-btn" onclick="aiFillPhase(1)" id="ai-fill-1">&#10024; AI 幫我填這頁</button>
+        <div class="field-group">
+          <div class="field-label">輸入檔案格式（可複選）</div>
+          <div class="checkbox-group">
+            <div class="checkbox-option">
+              <input type="checkbox" id="fmt-xlsx" value=".xlsx" data-phase="1" data-key="inputFormat">
+              <label for="fmt-xlsx">.xlsx</label>
+            </div>
+            <div class="checkbox-option">
+              <input type="checkbox" id="fmt-csv" value=".csv" data-phase="1" data-key="inputFormat">
+              <label for="fmt-csv">.csv</label>
+            </div>
+            <div class="checkbox-option">
+              <input type="checkbox" id="fmt-manual" value="手動輸入" data-phase="1" data-key="inputFormat">
+              <label for="fmt-manual">手動輸入</label>
+            </div>
+            <div class="checkbox-option">
+              <input type="checkbox" id="fmt-other" value="其他" data-phase="1" data-key="inputFormat">
+              <label for="fmt-other">其他</label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">輸入欄位定義</div>
+          <div class="field-hint">欄位名稱、資料型態、單位</div>
+          <textarea id="f-inputFields" rows="3" placeholder="例：&#10;元件名稱（文字）&#10;功耗（數字，單位：W）&#10;最大接面溫度（數字，單位：°C）" data-phase="1" data-key="inputFields"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">輸出格式</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="outputFormat" id="out-screen" value="畫面顯示" data-phase="1" data-key="outputFormat">
+              <label for="out-screen">畫面顯示</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="outputFormat" id="out-excel" value="匯出 Excel" data-phase="1" data-key="outputFormat">
+              <label for="out-excel">匯出 Excel</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="outputFormat" id="out-pdf" value="產生 PDF" data-phase="1" data-key="outputFormat">
+              <label for="out-pdf">產生 PDF</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="outputFormat" id="out-multi" value="多種格式" data-phase="1" data-key="outputFormat">
+              <label for="out-multi">多種格式</label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">計算邏輯</div>
+          <div class="field-hint">公式、規則、Lookup table、經驗值</div>
+          <textarea id="f-calcLogic" rows="4" placeholder="例：&#10;散熱面積 = Q / (h × ΔT)&#10;h 預設：自然對流 10 W/m²K，強制對流 50 W/m²K" data-phase="1" data-key="calcLogic"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">邊界條件處理</div>
+          <div class="field-hint">空值、零值、負值、超出範圍怎麼處理？</div>
+          <textarea id="f-boundary" rows="2" placeholder="例：功耗欄位為空或非數字時，跳過並警告" data-phase="1" data-key="boundary"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">限制與假設</div>
+          <div class="field-hint">這工具「不做」什麼？前提假設？</div>
+          <textarea id="f-limits" rows="2" placeholder="例：不做 3D 模擬，假設使用者都用 Windows" data-phase="1" data-key="limits"></textarea>
+        </div>
+      </div>
+
+      <!-- ===== Phase 2: 技術架構 + 功能拆解 ===== -->
+      <div id="phase-2" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#2D9B6E">2</div>
+          <div>
+            <div class="phase-label" style="color:#2D9B6E">Phase 2</div>
+            <div class="phase-name">技術架構 + 功能拆解</div>
+          </div>
+        </div>
+        <button class="ai-fill-btn" onclick="aiFillPhase(2)" id="ai-fill-2">&#10024; AI 幫我填這頁</button>
+        <div class="field-group">
+          <div class="field-label">前端框架</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="frontend" id="fe-streamlit" value="Streamlit" data-phase="2" data-key="frontend">
+              <label for="fe-streamlit">Streamlit<span class="radio-sub">快速開發，適合內部工具</span></label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="frontend" id="fe-reflex" value="Reflex" data-phase="2" data-key="frontend">
+              <label for="fe-reflex">Reflex<span class="radio-sub">更精緻的 UI</span></label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="frontend" id="fe-react" value="React" data-phase="2" data-key="frontend">
+              <label for="fe-react">React<span class="radio-sub">組件化開發，適合複雜互動 UI</span></label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="frontend" id="fe-ai" value="AI推薦" data-phase="2" data-key="frontend">
+              <label for="fe-ai">&#129302; AI 推薦<span class="radio-sub">根據需求自動判斷</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">資料庫</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="database" id="db-firebase" value="Firebase" data-phase="2" data-key="database">
+              <label for="db-firebase">Firebase<span class="radio-sub">設定簡單，中小型資料</span></label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="database" id="db-supabase" value="Supabase" data-phase="2" data-key="database">
+              <label for="db-supabase">Supabase<span class="radio-sub">複雜查詢，大量資料</span></label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="database" id="db-none" value="不需要資料庫" data-phase="2" data-key="database">
+              <label for="db-none">不需要<span class="radio-sub">純計算工具</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">需要 UI 介面嗎？</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="uiNeed" id="ui-yes" value="需要 UI" data-phase="2" data-key="uiNeed">
+              <label for="ui-yes">需要 UI</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="uiNeed" id="ui-no" value="純指令操作" data-phase="2" data-key="uiNeed">
+              <label for="ui-no">純指令操作</label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">功能拆解清單</div>
+          <div class="field-hint">把工具拆成獨立的小功能，每個用一句話描述。可設定優先級和預估工時。</div>
+          <div class="feature-list" id="feature-list"></div>
+          <button class="add-feature-btn" onclick="addFeature()">+ 新增功能</button>
+        </div>
+      </div>
+
+      <!-- ===== Phase 3: Skill 選擇 ===== -->
+      <div id="phase-3" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#8E44AD">3</div>
+          <div>
+            <div class="phase-label" style="color:#8E44AD">Phase 3</div>
+            <div class="phase-name">Skill 選擇</div>
+          </div>
+        </div>
+        <div class="field-hint mb-12">從你的 claude-skills repo 中選擇要載入的 Skill 檔案。這些 Skill 會在推送時複製到新 repo 的 .claude/skills/ 目錄。</div>
+        <div class="skill-selected-count" id="skill-selected-count" style="display:none">已選 0 個 Skill</div>
+        <div id="skill-cards-container">
+          <div class="empty-state" id="skill-empty-state">
+            <h3>尚未載入 Skills</h3>
+            <p>請先在設定頁配置 Skills Repo，或手動新增。</p>
+            <button onclick="openSettings()">前往設定</button>
+          </div>
+        </div>
+        <div style="margin-top:16px; text-align:right">
+          <button class="btn btn-secondary" onclick="refreshSkills()">&#8635; 重新載入</button>
+          <button class="btn btn-secondary" onclick="showAddSkillModal()" style="margin-left:8px">+ 手動新增 Skill</button>
+        </div>
+      </div>
+
+      <!-- ===== Phase 4: 測試計畫 ===== -->
+      <div id="phase-4" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#2E86C1">4</div>
+          <div>
+            <div class="phase-label" style="color:#2E86C1">Phase 4</div>
+            <div class="phase-name">測試計畫</div>
+          </div>
+        </div>
+        <button class="ai-fill-btn" onclick="aiFillPhase(4)" id="ai-fill-4">&#10024; AI 幫我填這頁</button>
+        <div class="field-group">
+          <div class="field-label">測試案例清單</div>
+          <div class="field-hint">列出每個測試案例的輸入值、預期輸出和狀態</div>
+          <div class="test-case-list" id="test-case-list"></div>
+          <button class="add-feature-btn" onclick="addTestCase()" style="margin-top:8px">+ 新增測試案例</button>
+        </div>
+        <div class="field-group">
+          <div class="field-label">邊界值測試說明</div>
+          <div class="field-hint">極端值（最大/最小/零/空白/負數）的測試方式</div>
+          <textarea id="f-boundaryTest" rows="3" placeholder="例：功耗輸入 0W、負值、超過 1000W 時的行為" data-phase="4" data-key="boundaryTest"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">已知限制說明</div>
+          <div class="field-hint">目前已知的技術限制或尚未處理的邊界情況</div>
+          <textarea id="f-knownLimitations" rows="3" placeholder="例：暫不支援多工單同時計算、檔案大小限制 10MB" data-phase="4" data-key="knownLimitations"></textarea>
+        </div>
+      </div>
+
+      <!-- ===== Phase 5: 部署計畫 ===== -->
+      <div id="phase-5" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#27AE60">5</div>
+          <div>
+            <div class="phase-label" style="color:#27AE60">Phase 5</div>
+            <div class="phase-name">部署計畫</div>
+          </div>
+        </div>
+        <button class="ai-fill-btn" onclick="aiFillPhase(5)" id="ai-fill-5">&#10024; AI 幫我填這頁</button>
+        <div class="field-group">
+          <div class="field-label">部署平台</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="deployPlatform" id="dep-streamlit" value="Streamlit Cloud" data-phase="5" data-key="deployPlatform">
+              <label for="dep-streamlit">Streamlit Cloud</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="deployPlatform" id="dep-ghpages" value="GitHub Pages" data-phase="5" data-key="deployPlatform">
+              <label for="dep-ghpages">GitHub Pages</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="deployPlatform" id="dep-local" value="本機執行" data-phase="5" data-key="deployPlatform">
+              <label for="dep-local">本機執行</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="deployPlatform" id="dep-other" value="其他" data-phase="5" data-key="deployPlatform">
+              <label for="dep-other">其他</label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">更新維護頻率</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="updateFreq" id="freq-each" value="每次使用" data-phase="5" data-key="updateFreq">
+              <label for="freq-each">每次使用</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="updateFreq" id="freq-monthly" value="每月" data-phase="5" data-key="updateFreq">
+              <label for="freq-monthly">每月</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="updateFreq" id="freq-demand" value="需求導向" data-phase="5" data-key="updateFreq">
+              <label for="freq-demand">需求導向</label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">使用權限</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="accessLevel" id="access-me" value="只有我" data-phase="5" data-key="accessLevel">
+              <label for="access-me">只有我</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="accessLevel" id="access-team" value="團隊內部" data-phase="5" data-key="accessLevel">
+              <label for="access-team">團隊內部</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="accessLevel" id="access-public" value="開放給客戶" data-phase="5" data-key="accessLevel">
+              <label for="access-public">開放給客戶</label>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">部署後通知方式</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="notifyMethod" id="notify-none" value="無" data-phase="5" data-key="notifyMethod">
+              <label for="notify-none">無</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="notifyMethod" id="notify-email" value="Email" data-phase="5" data-key="notifyMethod">
+              <label for="notify-email">Email</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="notifyMethod" id="notify-slack" value="Slack" data-phase="5" data-key="notifyMethod">
+              <label for="notify-slack">Slack</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Phase 6: 預覽 & 推送 ===== -->
+      <div id="phase-6" class="phase-section" style="display:none">
+        <div class="phase-header">
+          <div class="phase-num" style="background:#E74C3C">6</div>
+          <div>
+            <div class="phase-label" style="color:#E74C3C">Phase 6</div>
+            <div class="phase-name">預覽 &amp; 推送到 GitHub</div>
+          </div>
+        </div>
+        <button class="ai-fill-btn" onclick="aiOrganizeSpec()" id="ai-organize-btn">&#129302; AI 整理規格</button>
+        <div class="field-group">
+          <div class="field-label">預覽生成的規格文件</div>
+          <div class="field-hint">這就是會推送到 GitHub 的 SPEC.md 內容</div>
+          <div class="preview-wrapper">
+            <button class="copy-btn" onclick="copyPreview()">複製</button>
+            <div class="preview-box">
+              <pre id="preview-content">（點擊「AI 整理規格」或直接預覽）</pre>
+            </div>
+          </div>
+        </div>
+        <div class="push-progress" id="push-progress" style="display:none">
+          <div class="push-step" id="push-step-1"><span class="push-step-icon">&#9675;</span> Step 1：建立新工具 Repo</div>
+          <div class="push-step" id="push-step-2"><span class="push-step-icon">&#9675;</span> Step 2：建立目錄結構</div>
+          <div class="push-step" id="push-step-3"><span class="push-step-icon">&#9675;</span> Step 3：推送 SPEC.md</div>
+          <div class="push-step" id="push-step-4"><span class="push-step-icon">&#9675;</span> Step 4：複製 Skills 到 .claude/skills/</div>
+          <div class="push-step" id="push-step-5"><span class="push-step-icon">&#9675;</span> Step 5：生成並推送 CLAUDE.md</div>
+        </div>
+        <div id="push-complete" class="push-complete" style="display:none"></div>
+        <div id="status-msg" class="status-msg"></div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-bar" id="nav-bar" style="display:none">
+        <button class="btn btn-secondary" id="prev-btn" onclick="prevPhase()" disabled>&#8592; 上一步</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextPhase()">下一步 &#8594;</button>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- ===== New Project Modal ===== -->
+<div class="modal-overlay" id="new-project-modal">
   <div class="modal-box">
     <h2>建立新工具專案</h2>
     <p>輸入預開發工具的名稱，建立後會自動儲存到雲端資料庫。</p>
-    <input type="text" id="new-tool-name" placeholder="例：RRU 散熱面積計算器" autofocus>
+    <input type="text" id="new-project-name" placeholder="例：RRU 散熱面積計算器">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="hideNewToolModal()">取消</button>
-      <button class="btn-confirm" onclick="createNewTool()">建立</button>
+      <button class="btn-cancel" onclick="hideModal('new-project-modal')">取消</button>
+      <button class="btn-confirm" onclick="createNewProject()">建立</button>
     </div>
   </div>
 </div>
 
-<div class="container">
-
-  <!-- Progress -->
-  <div class="progress-wrap" id="progress"></div>
-
-  <!-- Step 0: Requirement Definition -->
-  <div id="step-0" class="phase-section">
-    <div class="phase-header">
-      <div class="phase-num" style="background:#E8725A">0</div>
-      <div>
-        <div class="phase-label" style="color:#E8725A">Phase 0</div>
-        <div class="phase-name">需求定義</div>
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="field-label">工具名稱</div>
-      <div class="field-hint">給這個工具一個簡短的名字</div>
-      <input type="text" id="tool-name" placeholder="例：RRU 散熱面積計算器" data-field="toolName">
-    </div>
-    <div class="field-group">
-      <div class="field-label">一句話描述</div>
-      <div class="field-hint">這個工具讓___可以透過___，快速得到___</div>
-      <textarea id="one-liner" rows="2" placeholder="例：讓散熱工程師可以透過上傳元件功耗表，快速得到所需散熱面積計算結果" data-field="oneLiner"></textarea>
-    </div>
-    <div class="field-group">
-      <div class="field-label">使用者</div>
-      <div class="field-hint">誰會用這個工具？</div>
-      <input type="text" id="users" placeholder="例：散熱工程師、機構工程師" data-field="users">
-    </div>
-    <div class="field-group">
-      <div class="field-label">觸發情境</div>
-      <div class="field-hint">什麼時候會打開這個工具？</div>
-      <input type="text" id="trigger" placeholder="例：每次拿到新案子的功耗表時" data-field="trigger">
-    </div>
-    <div class="field-group">
-      <div class="field-label">輸入</div>
-      <div class="field-hint">使用者要提供什麼資料？格式、欄位、單位</div>
-      <textarea id="input-spec" rows="3" placeholder="例：.xlsx 檔案，包含元件名稱(A欄)、功耗W(B欄)、Tj_max°C(C欄)" data-field="inputSpec"></textarea>
-    </div>
-    <div class="field-group">
-      <div class="field-label">輸出</div>
-      <div class="field-hint">工具跑完後使用者拿到什麼？</div>
-      <textarea id="output-spec" rows="3" placeholder="例：計算結果的 Excel 檔 + 長條圖 + 畫面顯示摘要" data-field="outputSpec"></textarea>
-    </div>
-    <div class="field-group">
-      <div class="field-label">成功定義</div>
-      <div class="field-hint">怎樣算「這工具有用」？</div>
-      <input type="text" id="success-def" placeholder="例：原本手動算 2 小時，現在 10 秒出結果" data-field="successDef">
+<!-- ===== Delete Confirm Modal ===== -->
+<div class="modal-overlay" id="delete-confirm-modal">
+  <div class="modal-box">
+    <h2>確認刪除</h2>
+    <p id="delete-confirm-msg">確定刪除此專案？此操作無法復原。</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('delete-confirm-modal')">取消</button>
+      <button class="btn-danger" onclick="confirmDeleteProject()">刪除</button>
     </div>
   </div>
+</div>
 
-  <!-- Step 1: Spec Design -->
-  <div id="step-1" class="phase-section" style="display:none">
-    <div class="phase-header">
-      <div class="phase-num" style="background:#D4852F">1</div>
-      <div>
-        <div class="phase-label" style="color:#D4852F">Phase 1</div>
-        <div class="phase-name">規格設計</div>
-      </div>
+<!-- ===== Settings Modal ===== -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-box" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin-bottom:0">&#9881; 設定</h2>
+      <button onclick="hideModal('settings-modal')" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:4px;min-width:44px;min-height:44px">&times;</button>
     </div>
-    <div class="field-group">
-      <div class="field-label">輸入檔案格式（可複選）</div>
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="checkbox" id="fmt-xlsx" value=".xlsx" data-field="inputFormat">
-          <label for="fmt-xlsx">.xlsx</label>
-        </div>
-        <div class="radio-option">
-          <input type="checkbox" id="fmt-csv" value=".csv" data-field="inputFormat">
-          <label for="fmt-csv">.csv</label>
-        </div>
-        <div class="radio-option">
-          <input type="checkbox" id="fmt-manual" value="手動輸入" data-field="inputFormat">
-          <label for="fmt-manual">手動輸入</label>
-        </div>
-        <div class="radio-option">
-          <input type="checkbox" id="fmt-other" value="其他" data-field="inputFormat">
-          <label for="fmt-other">其他</label>
-        </div>
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="field-label">輸入欄位定義</div>
-      <div class="field-hint">欄位名稱、資料型態、單位</div>
-      <textarea id="input-fields" rows="3" placeholder="例：&#10;元件名稱（文字）&#10;功耗（數字，單位：W）&#10;最大接面溫度（數字，單位：°C）" data-field="inputFields"></textarea>
-    </div>
-    <div class="field-group">
-      <div class="field-label">輸出格式</div>
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="radio" name="output-format" id="out-screen" value="畫面顯示" data-field="outputFormat">
-          <label for="out-screen">畫面顯示</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="output-format" id="out-excel" value="匯出 Excel" data-field="outputFormat">
-          <label for="out-excel">匯出 Excel</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="output-format" id="out-pdf" value="產生 PDF" data-field="outputFormat">
-          <label for="out-pdf">產生 PDF</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="output-format" id="out-multi" value="多種格式" data-field="outputFormat">
-          <label for="out-multi">多種格式</label>
-        </div>
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="field-label">計算邏輯</div>
-      <div class="field-hint">公式、規則、Lookup table、經驗值</div>
-      <textarea id="calc-logic" rows="4" placeholder="例：&#10;散熱面積 = Q / (h × ΔT)&#10;h 預設：自然對流 10 W/m²K，強制對流 50 W/m²K&#10;ΔT = Tj_max - T_ambient" data-field="calcLogic"></textarea>
-    </div>
-    <div class="field-group">
-      <div class="field-label">邊界條件處理</div>
-      <div class="field-hint">空值、零值、負值、超出範圍怎麼處理？</div>
-      <textarea id="boundary" rows="2" placeholder="例：功耗欄位為空或非數字時，跳過並警告" data-field="boundary"></textarea>
-    </div>
-    <div class="field-group">
-      <div class="field-label">限制與假設</div>
-      <div class="field-hint">這工具「不做」什麼？前提假設？</div>
-      <textarea id="limits" rows="2" placeholder="例：不做 3D 模擬，假設使用者都用 Windows" data-field="limits"></textarea>
-    </div>
-  </div>
 
-  <!-- Step 2: Tech Stack + Architecture -->
-  <div id="step-2" class="phase-section" style="display:none">
-    <div class="phase-header">
-      <div class="phase-num" style="background:#2D9B6E">1+2</div>
-      <div>
-        <div class="phase-label" style="color:#2D9B6E">Phase 1.4 + Phase 2</div>
-        <div class="phase-name">技術架構 + 功能拆解</div>
+    <!-- GitHub Settings -->
+    <div class="settings-section">
+      <h3>GitHub 設定</h3>
+      <div class="field-label" style="font-size:13px">Personal Access Token</div>
+      <div class="field-hint">需要 repo 權限。到 GitHub &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="password" id="settings-gh-token" placeholder="ghp_xxxxxxxxxxxx" style="flex:1">
+        <button onclick="toggleSettingsTokenVisibility()" id="settings-toggle-eye" style="padding:8px 12px;border-radius:8px;border:1px solid #E0E0E0;background:#FFF;cursor:pointer;min-width:44px;min-height:36px;font-size:13px">&#128065;</button>
       </div>
+      <div class="field-label mt-12" style="font-size:13px">GitHub 帳號名稱</div>
+      <input type="text" id="settings-gh-username" placeholder="（輸入 Token 後自動讀取）" readonly style="background:#F5F5F5">
     </div>
-    <div class="field-group">
-      <div class="field-label">前端框架</div>
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="radio" name="frontend" id="fe-streamlit" value="Streamlit" checked data-field="frontend">
-          <label for="fe-streamlit">Streamlit<br><span style="font-size:11px;font-weight:400;color:#999">快速開發，適合內部工具</span></label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="frontend" id="fe-reflex" value="Reflex" data-field="frontend">
-          <label for="fe-reflex">Reflex<br><span style="font-size:11px;font-weight:400;color:#999">更精緻的 UI</span></label>
-        </div>
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="field-label">資料庫</div>
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="radio" name="database" id="db-firebase" value="Firebase" checked data-field="database">
-          <label for="db-firebase">Firebase<br><span style="font-size:11px;font-weight:400;color:#999">設定簡單，中小型資料</span></label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="database" id="db-supabase" value="Supabase" data-field="database">
-          <label for="db-supabase">Supabase<br><span style="font-size:11px;font-weight:400;color:#999">複雜查詢，大量資料</span></label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="database" id="db-none" value="不需要資料庫" data-field="database">
-          <label for="db-none">不需要<br><span style="font-size:11px;font-weight:400;color:#999">純計算工具</span></label>
-        </div>
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="field-label">需要 UI 介面嗎？</div>
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="radio" name="ui-need" id="ui-yes" value="需要 UI" checked data-field="uiNeed">
-          <label for="ui-yes">需要 UI</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" name="ui-need" id="ui-no" value="純指令操作" data-field="uiNeed">
-          <label for="ui-no">純指令操作</label>
-        </div>
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="field-label">功能拆解清單</div>
-      <div class="field-hint">把工具拆成獨立的小功能，每個用一句話描述</div>
-      <div class="feature-list" id="feature-list">
-        <div class="feature-item">
-          <span class="num">1</span>
-          <input type="text" class="feature-input" placeholder="例：讀取 Excel 並提取功耗欄位" data-field="features">
-          <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
-        </div>
-        <div class="feature-item">
-          <span class="num">2</span>
-          <input type="text" class="feature-input" placeholder="例：根據功耗計算散熱面積" data-field="features">
-          <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
-        </div>
-        <div class="feature-item">
-          <span class="num">3</span>
-          <input type="text" class="feature-input" placeholder="例：將結果畫成長條圖" data-field="features">
-          <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
-        </div>
-      </div>
-      <button class="add-feature-btn" onclick="addFeature()">+ 新增功能</button>
-    </div>
-  </div>
 
-  <!-- Step 3: Preview + GitHub Push -->
-  <div id="step-3" class="phase-section" style="display:none">
-    <div class="phase-header">
-      <div class="phase-num" style="background:#2E86C1">&#10003;</div>
-      <div>
-        <div class="phase-label" style="color:#2E86C1">最後一步</div>
-        <div class="phase-name">預覽 + 推送到 GitHub</div>
-      </div>
-    </div>
-    <div class="github-config">
-      <div class="field-label">GitHub 設定</div>
-      <div class="field-hint">填入你的 GitHub 資訊，規格文件會自動推送到你的 repo</div>
-      <div style="margin-top:12px">
-        <div class="field-label" style="font-size:12px">Personal Access Token</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-          <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx" style="flex:1">
-          <button onclick="toggleTokenVisibility()" id="toggle-eye-btn" style="
-            padding:8px 12px;border-radius:8px;border:1px solid #444;
-            background:#333;color:#CCC;font-size:13px;cursor:pointer;white-space:nowrap;
-          ">&#128065; 顯示</button>
+    <!-- AI Model Settings -->
+    <div class="settings-section">
+      <h3>AI 模型設定</h3>
+      <div class="field-hint">API Key 只存在你的瀏覽器，不會上傳任何地方。</div>
+      <div class="provider-cards" id="provider-cards">
+        <div class="provider-card selected" onclick="selectProvider('gemini')" id="provider-gemini">
+          <div class="provider-card-name">&#11088; Google Gemini</div>
+          <div class="provider-card-model">gemini-2.0-flash</div>
+          <span class="provider-card-badge badge-free">免費</span>
+          <a class="provider-card-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" onclick="event.stopPropagation()">取得 Key &rarr;</a>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
-          <input type="checkbox" id="remember-token" onchange="handleRememberToggle()" style="
-            width:16px;height:16px;accent-color:#2D9B6E;cursor:pointer;
-          ">
-          <span style="font-size:12px;color:#AAA">記住 Token 和 Repo（儲存在此瀏覽器）</span>
-        </label>
-        <div class="field-hint" style="margin-top:0">
-          到 GitHub &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; 建立 token（需要 repo 權限）
+        <div class="provider-card" onclick="selectProvider('openrouter')" id="provider-openrouter">
+          <div class="provider-card-name">OpenRouter</div>
+          <div class="provider-card-model">多種免費模型</div>
+          <span class="provider-card-badge badge-free">免費額度</span>
+          <a class="provider-card-link" href="https://openrouter.ai/keys" target="_blank" rel="noopener" onclick="event.stopPropagation()">取得 Key &rarr;</a>
         </div>
-        <div id="saved-indicator" style="
-          display:none;margin-top:6px;padding:6px 12px;border-radius:6px;
-          background:#2D9B6E20;color:#2D9B6E;font-size:12px;font-weight:600;
-        ">&#10003; 已從瀏覽器載入儲存的設定</div>
+        <div class="provider-card" onclick="selectProvider('groq')" id="provider-groq">
+          <div class="provider-card-name">Groq</div>
+          <div class="provider-card-model">llama-3.3-70b-versatile</div>
+          <span class="provider-card-badge badge-free">免費</span>
+          <a class="provider-card-link" href="https://console.groq.com" target="_blank" rel="noopener" onclick="event.stopPropagation()">取得 Key &rarr;</a>
+        </div>
+        <div class="provider-card" onclick="selectProvider('anthropic')" id="provider-anthropic">
+          <div class="provider-card-name">Anthropic Claude</div>
+          <div class="provider-card-model">claude-sonnet-4-20250514</div>
+          <span class="provider-card-badge badge-paid">付費</span>
+          <a class="provider-card-link" href="https://console.anthropic.com" target="_blank" rel="noopener" onclick="event.stopPropagation()">取得 Key &rarr;</a>
+        </div>
       </div>
-      <div style="margin-top:8px">
-        <div class="field-label" style="font-size:12px">Repository（從 GitHub 帳號自動載入）</div>
-        <div class="repo-selector-wrap">
-          <select id="gh-repo" data-field="ghRepo">
-            <option value="">-- 請先輸入 Token 以載入倉庫列表 --</option>
+      <div id="ai-key-section">
+        <div class="field-label mt-8" style="font-size:13px" id="ai-key-label">Google Gemini API Key</div>
+        <input type="password" id="ai-api-key" placeholder="輸入 API Key">
+        <div id="openrouter-model-section" style="display:none" class="mt-8">
+          <div class="field-label" style="font-size:13px">模型選擇</div>
+          <select class="form-select" id="openrouter-model">
+            <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free（預設）</option>
+            <option value="google/gemini-2.0-flash-exp:free">google/gemini-2.0-flash-exp:free</option>
+            <option value="mistralai/mistral-7b-instruct:free">mistralai/mistral-7b-instruct:free</option>
+            <option value="deepseek/deepseek-r1:free">deepseek/deepseek-r1:free</option>
           </select>
-          <button onclick="fetchRepos()" title="重新載入倉庫列表">&#x21BB; 載入</button>
         </div>
-        <div id="repo-manual-wrap" style="margin-bottom:10px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
-            <input type="checkbox" id="repo-manual-toggle" onchange="toggleManualRepo()" style="width:14px;height:14px;accent-color:#2D9B6E;cursor:pointer;">
-            <span style="font-size:12px;color:#AAA">手動輸入 Repository</span>
-          </label>
-          <input type="text" id="gh-repo-manual" placeholder="例：tedus/rru-thermal-tool" style="display:none;background:#2A2A2A;border-color:#444;color:#FFF;" data-field="ghRepoManual">
-        </div>
-      </div>
-      <div>
-        <div class="field-label" style="font-size:12px">檔案路徑（在 repo 中的位置）</div>
-        <input type="text" id="gh-path" value="SPEC.md" style="margin-bottom:4px">
-        <div class="field-hint">建議用 SPEC.md，Claude Code 可以直接讀取</div>
-      </div>
-      <button onclick="clearSavedSettings()" id="clear-settings-btn" style="
-        display:none;margin-top:10px;padding:6px 14px;border-radius:6px;
-        border:1px solid #555;background:transparent;color:#888;
-        font-size:12px;cursor:pointer;
-      ">&#128465; 清除已儲存的設定</button>
-    </div>
-    <div class="field-group">
-      <div class="field-label">預覽生成的規格文件</div>
-      <div class="field-hint">這就是會推送到 GitHub 的內容</div>
-      <div class="preview-wrapper">
-        <button class="copy-btn" onclick="copyPreview()">複製</button>
-        <div class="preview-box">
-          <pre id="preview-content"></pre>
-        </div>
+        <button class="test-connection-btn" onclick="testAIConnection()">&#128270; 測試連線</button>
+        <div id="ai-test-result" class="mt-8" style="font-size:13px"></div>
       </div>
     </div>
-    <div id="status-msg" class="status-msg"></div>
-  </div>
 
-  <!-- Navigation -->
-  <div class="nav-bar">
-    <button class="btn btn-secondary" id="prev-btn" onclick="prevStep()" disabled>&larr; 上一步</button>
-    <button class="btn btn-primary" id="next-btn" onclick="nextStep()">下一步 &rarr;</button>
+    <!-- Skills Repo Settings -->
+    <div class="settings-section">
+      <h3>Skill 中央倉庫設定</h3>
+      <div class="field-label" style="font-size:13px">Skills Repo 名稱</div>
+      <div class="field-hint">存放所有 .md Skill 檔案的 GitHub repo</div>
+      <input type="text" id="settings-skills-repo" placeholder="claude-skills" value="claude-skills">
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="test-connection-btn" onclick="checkSkillsRepo()">&#128270; 檢查是否存在</button>
+        <button class="test-connection-btn" onclick="createSkillsRepo()">&#10024; 自動建立 repo</button>
+      </div>
+      <div id="skills-repo-result" class="mt-8" style="font-size:13px"></div>
+    </div>
+
+    <!-- Skill Import -->
+    <div class="settings-section">
+      <h3>從 Claude.ai 匯入 .skill 檔案</h3>
+      <div class="field-hint">支援多檔案選取。.skill 為 ZIP 格式，內含 SKILL.md。</div>
+      <div class="skill-upload-zone" id="skill-upload-zone" onclick="document.getElementById('skill-file-input').click()">
+        <p>&#128230; 點擊選取 .skill 檔案</p>
+        <p style="font-size:11px;margin-top:4px">或拖曳檔案到此處（桌機版）</p>
+      </div>
+      <input type="file" id="skill-file-input" accept=".skill" multiple style="display:none" onchange="handleSkillFiles(this.files)">
+      <div class="skill-preview-list" id="skill-preview-list"></div>
+      <button class="btn btn-primary w-full mt-12" id="upload-skills-btn" style="display:none" onclick="uploadAllSkills()">&#128640; 全部上傳到 claude-skills repo</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="saveSettings(); hideModal('settings-modal')">儲存設定</button>
+    </div>
   </div>
 </div>
 
-<script>
-// ===== Firebase Config =====
-const firebaseConfig = {
-  apiKey: "AIzaSyAh_Abq-q9gJz40KN0bBJ6hfOLQ0y36Ugs",
-  authDomain: "tool-spec-form.firebaseapp.com",
-  projectId: "tool-spec-form",
-  storageBucket: "tool-spec-form.firebasestorage.app",
-  messagingSenderId: "918692000904",
-  appId: "1:918692000904:web:d31b8730e3cbbeb7e95b3d"
-};
-
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const COLLECTION = 'tool-specs';
-
-// ===== Global State =====
-const TOTAL_STEPS = 4;
-let currentStep = 0;
-let currentDocId = null;
-let saveTimer = null;
-let isLoading = false; // prevent auto-save during load
-
-// ===== Save Status Indicator =====
-function setSaveStatus(status) {
-  const el = document.getElementById('save-status');
-  if (status === 'saved') {
-    el.textContent = '已儲存';
-    el.className = 'save-status saved';
-  } else if (status === 'saving') {
-    el.textContent = '儲存中...';
-    el.className = 'save-status saving';
-  } else {
-    el.textContent = '未連線';
-    el.className = 'save-status offline';
-  }
-}
-
-// ===== Utility =====
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ===== Progress & Navigation =====
-function updateProgress() {
-  let html = '';
-  for (let i = 0; i < TOTAL_STEPS; i++) {
-    let cls = 'progress-step';
-    if (i < currentStep) cls += ' done';
-    else if (i === currentStep) cls += ' active';
-    html += `<div class="${cls}"></div>`;
-  }
-  document.getElementById('progress').innerHTML = html;
-}
-
-function showStep(step) {
-  for (let i = 0; i < TOTAL_STEPS; i++) {
-    const el = document.getElementById(`step-${i}`);
-    if (el) el.style.display = i === step ? 'block' : 'none';
-  }
-  document.getElementById('prev-btn').disabled = step === 0;
-  if (step === TOTAL_STEPS - 1) {
-    document.getElementById('next-btn').textContent = '推送到 GitHub';
-    document.getElementById('next-btn').style.background = '#E8725A';
-    generatePreview();
-  } else {
-    document.getElementById('next-btn').textContent = '下一步 \u2192';
-    document.getElementById('next-btn').style.background = '#2D9B6E';
-  }
-  updateProgress();
-}
-
-function nextStep() {
-  if (currentStep === TOTAL_STEPS - 1) {
-    pushToGitHub();
-    return;
-  }
-  currentStep = Math.min(TOTAL_STEPS - 1, currentStep + 1);
-  showStep(currentStep);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function prevStep() {
-  currentStep = Math.max(0, currentStep - 1);
-  showStep(currentStep);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ===== Feature List =====
-function addFeature() {
-  const list = document.getElementById('feature-list');
-  const count = list.children.length + 1;
-  const div = document.createElement('div');
-  div.className = 'feature-item';
-  div.innerHTML = `
-    <span class="num">${count}</span>
-    <input type="text" class="feature-input" placeholder="功能描述..." data-field="features">
-    <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
-  `;
-  list.appendChild(div);
-  // Attach auto-save listener to new input
-  const newInput = div.querySelector('.feature-input');
-  newInput.addEventListener('input', () => scheduleSave());
-}
-
-function removeFeature(btn) {
-  const item = btn.closest('.feature-item');
-  const list = document.getElementById('feature-list');
-  if (list.children.length <= 1) return;
-  item.remove();
-  Array.from(list.children).forEach((child, i) => {
-    child.querySelector('.num').textContent = i + 1;
-  });
-  scheduleSave();
-}
-
-// ===== Form Value Helpers =====
-function getVal(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : '';
-}
-
-function getRadio(name) {
-  const el = document.querySelector(`input[name="${name}"]:checked`);
-  return el ? el.value : '';
-}
-
-function getCheckboxValues(fieldName) {
-  const checked = document.querySelectorAll(`input[type="checkbox"][data-field="${fieldName}"]:checked`);
-  return Array.from(checked).map(el => el.value);
-}
-
-function getFeatures() {
-  const inputs = document.querySelectorAll('.feature-input');
-  const features = [];
-  inputs.forEach((inp, i) => {
-    if (inp.value.trim()) features.push(`${i + 1}. ${inp.value.trim()}`);
-  });
-  return features;
-}
-
-// Get selected repo value (from dropdown or manual input)
-function getRepoValue() {
-  const manualOn = document.getElementById('repo-manual-toggle').checked;
-  if (manualOn) {
-    return getVal('gh-repo-manual');
-  }
-  return getVal('gh-repo');
-}
-
-// ===== Collect / Restore Form Data for Firebase =====
-function collectFormData() {
-  return {
-    toolName: getVal('tool-name'),
-    oneLiner: getVal('one-liner'),
-    users: getVal('users'),
-    trigger: getVal('trigger'),
-    inputSpec: getVal('input-spec'),
-    outputSpec: getVal('output-spec'),
-    successDef: getVal('success-def'),
-    inputFormat: getCheckboxValues('inputFormat'),
-    inputFields: getVal('input-fields'),
-    outputFormat: getRadio('output-format'),
-    calcLogic: getVal('calc-logic'),
-    boundary: getVal('boundary'),
-    limits: getVal('limits'),
-    frontend: getRadio('frontend'),
-    database: getRadio('database'),
-    uiNeed: getRadio('ui-need'),
-    features: Array.from(document.querySelectorAll('.feature-input')).map(inp => inp.value),
-    ghRepo: getRepoValue(),
-    ghPath: getVal('gh-path'),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-}
-
-function restoreFormData(data) {
-  isLoading = true;
-
-  // Text fields
-  const textMap = {
-    'tool-name': 'toolName',
-    'one-liner': 'oneLiner',
-    'users': 'users',
-    'trigger': 'trigger',
-    'input-spec': 'inputSpec',
-    'output-spec': 'outputSpec',
-    'success-def': 'successDef',
-    'input-fields': 'inputFields',
-    'calc-logic': 'calcLogic',
-    'boundary': 'boundary',
-    'limits': 'limits',
-    'gh-path': 'ghPath',
-  };
-
-  for (const [elId, key] of Object.entries(textMap)) {
-    const el = document.getElementById(elId);
-    if (el && data[key]) el.value = data[key];
-  }
-
-  // Radio buttons
-  const radioMap = {
-    'output-format': 'outputFormat',
-    'frontend': 'frontend',
-    'database': 'database',
-    'ui-need': 'uiNeed',
-  };
-
-  for (const [name, key] of Object.entries(radioMap)) {
-    if (data[key]) {
-      const radio = document.querySelector(`input[name="${name}"][value="${data[key]}"]`);
-      if (radio) radio.checked = true;
-    }
-  }
-
-  // Checkboxes (inputFormat is multi-select)
-  if (data.inputFormat && Array.isArray(data.inputFormat)) {
-    document.querySelectorAll('input[type="checkbox"][data-field="inputFormat"]').forEach(cb => {
-      cb.checked = data.inputFormat.includes(cb.value);
-    });
-  }
-
-  // Features
-  if (data.features && data.features.length > 0) {
-    const list = document.getElementById('feature-list');
-    list.innerHTML = '';
-    data.features.forEach((val, i) => {
-      const div = document.createElement('div');
-      div.className = 'feature-item';
-      div.innerHTML = `
-        <span class="num">${i + 1}</span>
-        <input type="text" class="feature-input" placeholder="功能描述..." data-field="features" value="${escapeHtml(val)}">
-        <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
-      `;
-      list.appendChild(div);
-    });
-    // Re-attach listeners
-    list.querySelectorAll('.feature-input').forEach(inp => {
-      inp.addEventListener('input', () => scheduleSave());
-    });
-  }
-
-  // Repo - try to set dropdown, fall back to manual
-  if (data.ghRepo) {
-    const sel = document.getElementById('gh-repo');
-    const optExists = Array.from(sel.options).some(o => o.value === data.ghRepo);
-    if (optExists) {
-      sel.value = data.ghRepo;
-    } else {
-      // Set manual
-      document.getElementById('repo-manual-toggle').checked = true;
-      document.getElementById('gh-repo-manual').style.display = 'block';
-      document.getElementById('gh-repo-manual').value = data.ghRepo;
-    }
-  }
-
-  isLoading = false;
-}
-
-// ===== Firebase: Auto-Save with Debounce =====
-function scheduleSave() {
-  if (isLoading || !currentDocId) return;
-  if (saveTimer) clearTimeout(saveTimer);
-  setSaveStatus('saving');
-  saveTimer = setTimeout(() => saveToFirebase(), 1000);
-}
-
-async function saveToFirebase() {
-  if (!currentDocId) return;
-  try {
-    const data = collectFormData();
-    await db.collection(COLLECTION).doc(currentDocId).update(data);
-    setSaveStatus('saved');
-    // Also update the dropdown text if tool name changed
-    const sel = document.getElementById('tool-selector');
-    const opt = sel.querySelector(`option[value="${currentDocId}"]`);
-    if (opt && data.toolName) {
-      opt.textContent = data.toolName;
-    }
-  } catch (e) {
-    console.error('Save failed:', e);
-    setSaveStatus('offline');
-  }
-}
-
-// ===== Firebase: Load Form List =====
-async function loadFormList() {
-  try {
-    const snapshot = await db.collection(COLLECTION).orderBy('updatedAt', 'desc').get();
-    const sel = document.getElementById('tool-selector');
-    sel.innerHTML = '<option value="" disabled>-- 選擇工具專案 --</option>';
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const opt = document.createElement('option');
-      opt.value = doc.id;
-      opt.textContent = data.toolName || '未命名工具';
-      sel.appendChild(opt);
-    });
-    // If we have a currentDocId, keep it selected
-    if (currentDocId) {
-      sel.value = currentDocId;
-    }
-  } catch (e) {
-    console.error('Load form list failed:', e);
-  }
-}
-
-// ===== Firebase: Select a Tool =====
-async function onToolSelect() {
-  const sel = document.getElementById('tool-selector');
-  const docId = sel.value;
-  if (!docId) return;
-
-  try {
-    const doc = await db.collection(COLLECTION).doc(docId).get();
-    if (doc.exists) {
-      currentDocId = docId;
-      clearForm();
-      restoreFormData(doc.data());
-      currentStep = 0;
-      showStep(0);
-      setSaveStatus('saved');
-    }
-  } catch (e) {
-    console.error('Load tool failed:', e);
-  }
-}
-
-// ===== Firebase: Create New Tool =====
-function showNewToolModal() {
-  document.getElementById('new-tool-modal').classList.add('active');
-  const input = document.getElementById('new-tool-name');
-  input.value = '';
-  input.focus();
-}
-
-function hideNewToolModal() {
-  document.getElementById('new-tool-modal').classList.remove('active');
-}
-
-async function createNewTool() {
-  const name = document.getElementById('new-tool-name').value.trim();
-  if (!name) {
-    document.getElementById('new-tool-name').style.borderColor = '#E8725A';
-    return;
-  }
-
-  try {
-    const docRef = await db.collection(COLLECTION).add({
-      toolName: name,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    currentDocId = docRef.id;
-    hideNewToolModal();
-    clearForm();
-    document.getElementById('tool-name').value = name;
-    currentStep = 0;
-    showStep(0);
-    setSaveStatus('saved');
-
-    await loadFormList();
-    document.getElementById('tool-selector').value = currentDocId;
-  } catch (e) {
-    console.error('Create tool failed:', e);
-    alert('建立失敗：' + e.message);
-  }
-}
-
-// ===== Firebase: Delete Tool =====
-async function deleteCurrentTool() {
-  if (!currentDocId) {
-    alert('請先選擇一個工具專案');
-    return;
-  }
-
-  const sel = document.getElementById('tool-selector');
-  const opt = sel.querySelector(`option[value="${currentDocId}"]`);
-  const toolName = opt ? opt.textContent : '此工具';
-
-  if (!confirm(`確定要刪除「${toolName}」嗎？此操作無法復原。`)) return;
-
-  try {
-    await db.collection(COLLECTION).doc(currentDocId).delete();
-    currentDocId = null;
-    clearForm();
-    setSaveStatus('offline');
-    await loadFormList();
-    currentStep = 0;
-    showStep(0);
-  } catch (e) {
-    console.error('Delete failed:', e);
-    alert('刪除失敗：' + e.message);
-  }
-}
-
-// ===== Clear All Form Fields =====
-function clearForm() {
-  // Text inputs and textareas
-  document.querySelectorAll('input[type="text"][data-field], textarea[data-field]').forEach(el => {
-    el.value = '';
-  });
-
-  // Radio buttons & checkboxes - reset to defaults
-  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-  document.querySelectorAll('input[type="checkbox"][data-field="inputFormat"]').forEach(cb => cb.checked = false);
-  const defaults = { 'fe-streamlit': true, 'db-firebase': true, 'ui-yes': true };
-  for (const [id, val] of Object.entries(defaults)) {
-    const el = document.getElementById(id);
-    if (el) el.checked = val;
-  }
-
-  // Features - reset to 3 empty
-  const list = document.getElementById('feature-list');
-  list.innerHTML = '';
-  for (let i = 1; i <= 3; i++) {
-    const div = document.createElement('div');
-    div.className = 'feature-item';
-    div.innerHTML = `
-      <span class="num">${i}</span>
-      <input type="text" class="feature-input" placeholder="功能描述..." data-field="features">
-      <button class="remove-feature-btn" onclick="removeFeature(this)" title="移除">&times;</button>
-    `;
-    list.appendChild(div);
-  }
-  list.querySelectorAll('.feature-input').forEach(inp => {
-    inp.addEventListener('input', () => scheduleSave());
-  });
-
-  // Reset repo
-  document.getElementById('repo-manual-toggle').checked = false;
-  document.getElementById('gh-repo-manual').style.display = 'none';
-  document.getElementById('gh-repo-manual').value = '';
-
-  // Keep gh-path default
-  document.getElementById('gh-path').value = 'SPEC.md';
-}
-
-// ===== GitHub: Fetch Repos =====
-async function fetchRepos() {
-  const token = getVal('gh-token');
-  if (!token) {
-    alert('請先輸入 GitHub Personal Access Token');
-    return;
-  }
-
-  const sel = document.getElementById('gh-repo');
-  const prevValue = sel.value;
-  sel.innerHTML = '<option value="">載入中...</option>';
-
-  try {
-    let allRepos = [];
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      const res = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}&sort=updated`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error(`GitHub API 錯誤: ${res.status}`);
-      }
-
-      const repos = await res.json();
-      allRepos = allRepos.concat(repos);
-      hasMore = repos.length === 100;
-      page++;
-    }
-
-    sel.innerHTML = '<option value="">-- 選擇倉庫 --</option>';
-
-    allRepos.forEach(repo => {
-      const opt = document.createElement('option');
-      opt.value = repo.full_name;
-      opt.textContent = repo.full_name + (repo.private ? ' (私有)' : '');
-      sel.appendChild(opt);
-    });
-
-    // Restore previous selection if it exists
-    if (prevValue) {
-      const exists = Array.from(sel.options).some(o => o.value === prevValue);
-      if (exists) sel.value = prevValue;
-    }
-  } catch (e) {
-    console.error('Fetch repos failed:', e);
-    sel.innerHTML = '<option value="">載入失敗，請重試</option>';
-    alert('載入倉庫列表失敗：' + e.message);
-  }
-}
-
-function toggleManualRepo() {
-  const manual = document.getElementById('repo-manual-toggle').checked;
-  document.getElementById('gh-repo-manual').style.display = manual ? 'block' : 'none';
-}
-
-// ===== Markdown Generation =====
-function generateMarkdown() {
-  const features = getFeatures();
-  const now = new Date().toLocaleDateString('zh-TW');
-
-  let md = `# ${getVal('tool-name') || '未命名工具'} \u2014 開發規格書
-
-> 建立日期：${now}
-
----
-
-## Phase 0：需求定義
-
-- **一句話描述**：${getVal('one-liner') || '（未填寫）'}
-- **使用者**：${getVal('users') || '（未填寫）'}
-- **觸發情境**：${getVal('trigger') || '（未填寫）'}
-- **輸入**：${getVal('input-spec') || '（未填寫）'}
-- **輸出**：${getVal('output-spec') || '（未填寫）'}
-- **成功定義**：${getVal('success-def') || '（未填寫）'}
-
----
-
-## Phase 1：規格設計
-
-### 1.1 資料格式規格
-- **輸入檔案格式**：${getCheckboxValues('inputFormat').join('、') || '（未選擇）'}
-- **輸入欄位定義**：
-${getVal('input-fields') ? getVal('input-fields').split('\n').map(l => `  - ${l}`).join('\n') : '  （未填寫）'}
-- **輸出格式**：${getRadio('output-format') || '（未選擇）'}
-
-### 1.2 計算邏輯規格
-${getVal('calc-logic') || '（未填寫）'}
-
-### 1.3 邊界條件處理
-${getVal('boundary') || '（未填寫）'}
-
-### 1.4 技術架構
-- **前端框架**：${getRadio('frontend') || 'Streamlit'}
-- **資料庫**：${getRadio('database') || 'Firebase'}
-- **介面需求**：${getRadio('ui-need') || '需要 UI'}
-- **程式語言**：Python
-- **版本控制**：GitHub
-- **部署**：${getRadio('frontend') === 'Reflex' ? 'Reflex Cloud' : 'Streamlit Cloud'}
-
-### 1.5 限制與假設
-${getVal('limits') || '（未填寫）'}
-
----
-
-## Phase 2：功能拆解
-
-${features.length > 0 ? features.join('\n') : '（未填寫）'}
-
----
-
-## Phase 3：開發規則
-
-**一次只做一個功能，測試通過再做下一個。**
-
-每輪開發使用以下格式：
-- 【目標】這一步要完成什麼
-- 【輸入】這個功能接收什麼
-- 【輸出】這個功能要產出什麼
-- 【規則】計算邏輯或判斷條件
-- 【範例】一組具體的輸入 → 預期輸出
-
----
-
-## Phase 4：測試驗證
-
-| 測試類型 | 內容 |
-|---|---|
-| 正常測試 | 用標準輸入驗證結果正確性 |
-| 邊界測試 | 用極端值測試（最大、最小、零、空白） |
-| 錯誤測試 | 輸入錯誤資料（格式不對、缺欄位） |
-
----
-
-## Phase 5：迭代優化
-
-優先順序：正確性 > 穩定性 > 易用性 > 效率性 > 美觀性
-`;
-  return md;
-}
-
-function generatePreview() {
-  document.getElementById('preview-content').textContent = generateMarkdown();
-}
-
-function copyPreview() {
-  const text = document.getElementById('preview-content').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.copy-btn');
-    btn.textContent = '已複製 \u2713';
-    setTimeout(() => btn.textContent = '複製', 2000);
-  });
-}
-
-// ===== GitHub Push =====
-function showStatus(type, msg) {
-  const el = document.getElementById('status-msg');
-  el.className = `status-msg ${type}`;
-  el.textContent = msg;
-}
-
-async function pushToGitHub() {
-  const token = getVal('gh-token');
-  const repo = getRepoValue();
-  const path = getVal('gh-path') || 'SPEC.md';
-
-  if (!token || !repo) {
-    showStatus('error', '請填寫 GitHub Token 和 Repository');
-    return;
-  }
-
-  showStatus('loading', '正在推送到 GitHub...');
-
-  const content = generateMarkdown();
-  const base64Content = btoa(unescape(encodeURIComponent(content)));
-
-  try {
-    let sha = null;
-    try {
-      const checkRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-        }
-      });
-      if (checkRes.ok) {
-        const checkData = await checkRes.json();
-        sha = checkData.sha;
-      }
-    } catch(e) { /* file doesn't exist */ }
-
-    const body = {
-      message: `更新開發規格書: ${getVal('tool-name') || 'spec'}`,
-      content: base64Content,
-    };
-    if (sha) body.sha = sha;
-
-    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (res.ok) {
-      if (document.getElementById('remember-token').checked) {
-        saveGitHubSettings();
-      }
-      showStatus('success', `成功推送到 ${repo}/${path}！Claude Code 現在可以讀取了。`);
-    } else {
-      const err = await res.json();
-      showStatus('error', `推送失敗：${err.message}`);
-    }
-  } catch (e) {
-    showStatus('error', `網路錯誤：${e.message}`);
-  }
-}
-
-// ===== Remember GitHub Token & Settings =====
-function obfuscate(str) {
-  return btoa(unescape(encodeURIComponent(str))).split('').reverse().join('');
-}
-
-function deobfuscate(str) {
-  try {
-    return decodeURIComponent(escape(atob(str.split('').reverse().join(''))));
-  } catch(e) { return ''; }
-}
-
-function saveGitHubSettings() {
-  const token = getVal('gh-token');
-  const repo = getRepoValue();
-  if (token) localStorage.setItem('spec-gh-token', obfuscate(token));
-  if (repo) localStorage.setItem('spec-gh-repo', repo);
-  localStorage.setItem('spec-remember', 'true');
-}
-
-function loadGitHubSettings() {
-  const remembered = localStorage.getItem('spec-remember') === 'true';
-  if (!remembered) return;
-
-  const savedToken = localStorage.getItem('spec-gh-token');
-  const savedRepo = localStorage.getItem('spec-gh-repo');
-  if (savedToken) document.getElementById('gh-token').value = deobfuscate(savedToken);
-
-  // For repo, we'll try to set it after repos are fetched
-  if (savedRepo) {
-    window._savedRepo = savedRepo;
-  }
-
-  document.getElementById('remember-token').checked = true;
-
-  if (savedToken || savedRepo) {
-    document.getElementById('saved-indicator').style.display = 'block';
-    document.getElementById('clear-settings-btn').style.display = 'inline-block';
-  }
-}
-
-function handleRememberToggle() {
-  if (document.getElementById('remember-token').checked) {
-    saveGitHubSettings();
-  } else {
-    clearSavedSettings();
-  }
-}
-
-function clearSavedSettings() {
-  localStorage.removeItem('spec-gh-token');
-  localStorage.removeItem('spec-gh-repo');
-  localStorage.removeItem('spec-remember');
-  document.getElementById('remember-token').checked = false;
-  document.getElementById('saved-indicator').style.display = 'none';
-  document.getElementById('clear-settings-btn').style.display = 'none';
-}
-
-function toggleTokenVisibility() {
-  const input = document.getElementById('gh-token');
-  const btn = document.getElementById('toggle-eye-btn');
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.innerHTML = '&#128274; 隱藏';
-  } else {
-    input.type = 'password';
-    btn.innerHTML = '&#128065; 顯示';
-  }
-}
-
-// ===== Auto-Save: Attach Event Listeners =====
-function attachAutoSaveListeners() {
-  // Text inputs and textareas
-  document.querySelectorAll('input[type="text"][data-field], textarea[data-field]').forEach(el => {
-    el.addEventListener('input', () => scheduleSave());
-  });
-
-  // Radio buttons and checkboxes
-  document.querySelectorAll('input[type="radio"][data-field], input[type="checkbox"][data-field]').forEach(el => {
-    el.addEventListener('change', () => scheduleSave());
-  });
-
-  // Feature inputs (initial ones)
-  document.querySelectorAll('.feature-input').forEach(inp => {
-    inp.addEventListener('input', () => scheduleSave());
-  });
-
-  // GitHub settings also trigger save
-  document.getElementById('gh-repo').addEventListener('change', () => scheduleSave());
-  document.getElementById('gh-repo-manual').addEventListener('input', () => scheduleSave());
-  document.getElementById('gh-path').addEventListener('input', () => scheduleSave());
-}
-
-// ===== Modal: Enter key support =====
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && document.getElementById('new-tool-modal').classList.contains('active')) {
-    createNewTool();
-  }
-  if (e.key === 'Escape' && document.getElementById('new-tool-modal').classList.contains('active')) {
-    hideNewToolModal();
-  }
-});
-
-// ===== Initialize =====
-async function init() {
-  updateProgress();
-  loadGitHubSettings();
-  attachAutoSaveListeners();
-
-  // Load tool list from Firebase
-  await loadFormList();
-
-  // Auto-fetch repos if token exists
-  const token = getVal('gh-token');
-  if (token) {
-    fetchRepos().then(() => {
-      // Restore saved repo selection
-      if (window._savedRepo) {
-        const sel = document.getElementById('gh-repo');
-        const exists = Array.from(sel.options).some(o => o.value === window._savedRepo);
-        if (exists) {
-          sel.value = window._savedRepo;
-        } else {
-          // Fall back to manual input
-          document.getElementById('repo-manual-toggle').checked = true;
-          document.getElementById('gh-repo-manual').style.display = 'block';
-          document.getElementById('gh-repo-manual').value = window._savedRepo;
-        }
-      }
-    });
-  }
-
-  // Check if there are existing tools; if not, prompt to create
-  const sel = document.getElementById('tool-selector');
-  if (sel.options.length <= 1) {
-    // No tools yet, show modal
-    showNewToolModal();
-  }
-
-  setSaveStatus('saved');
-}
-
-init();
-</script>
+<!-- ===== Add Skill Modal ===== -->
+<div class="modal-overlay" id="add-skill-modal">
+  <div class="modal-box">
+    <h2>手動新增 Skill</h2>
+    <div class="field-label mt-12" style="font-size:13px">Skill 名稱</div>
+    <input type="text" id="manual-skill-name" placeholder="例：python-best-practices">
+    <div class="field-label mt-12" style="font-size:13px">Skill 描述</div>
+    <input type="text" id="manual-skill-desc" placeholder="一句話描述這個 Skill 的用途">
+    <div class="field-label mt-12" style="font-size:13px">Skill 內容 (Markdown)</div>
+    <textarea id="manual-skill-content" rows="6" placeholder="# Skill 內容..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('add-skill-modal')">取消</button>
+      <button class="btn-confirm" onclick="saveManualSkill()">儲存到 repo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Skill Preview Modal ===== -->
+<div class="modal-overlay" id="skill-preview-modal">
+  <div class="modal-box" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h2 id="skill-preview-title" style="margin-bottom:0">Skill 預覽</h2>
+      <button onclick="hideModal('skill-preview-modal')" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:4px;min-width:44px;min-height:44px">&times;</button>
+    </div>
+    <div class="preview-box" style="max-height:60vh">
+      <pre id="skill-preview-content"></pre>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
 </body>
 </html>
