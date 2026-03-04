@@ -13,6 +13,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <!-- SheetJS for Excel parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- PDF.js for PDF parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 <body>
 
@@ -96,12 +99,12 @@
         </div>
         <div class="field-group">
           <div class="field-label">參考檔案 <span style="font-size:11px;color:#999;font-weight:normal">（選填）</span></div>
-          <div class="field-hint">上傳現有的 Excel、CSV 或文字檔作為 AI 填表的參考資料。例如：以前用 Excel 做的 thermal report，AI 會參考裡面的欄位和格式來填寫規格。</div>
+          <div class="field-hint">上傳現有的 Excel、CSV、PDF、PPT 或文字檔作為 AI 填表的參考資料。例如：以前用 Excel 做的 thermal report，AI 會參考裡面的欄位和格式來填寫規格。</div>
           <div class="ref-upload-zone" id="ref-upload-zone" onclick="document.getElementById('ref-file-input').click()">
             <p>&#128206; 點擊上傳參考檔案</p>
-            <p style="font-size:11px;margin-top:4px">支援 .xlsx、.csv、.txt、.json、.md（最多 3 個檔案）</p>
+            <p style="font-size:11px;margin-top:4px">支援 .xlsx、.csv、.pdf、.pptx、.txt、.json、.md（最多 3 個檔案）</p>
           </div>
-          <input type="file" id="ref-file-input" accept=".xlsx,.xls,.csv,.txt,.json,.md,.tsv" multiple style="display:none" onchange="handleRefFiles(this.files)">
+          <input type="file" id="ref-file-input" accept=".xlsx,.xls,.csv,.txt,.json,.md,.tsv,.pdf,.pptx,.ppt" multiple style="display:none" onchange="handleRefFiles(this.files)">
           <div class="ref-file-list" id="ref-file-list"></div>
         </div>
         <div class="field-group">

@@ -1357,6 +1357,42 @@ async function parseRefFile(file) {
         parts.push(`[工作表: ${name}]\n${csv}`);
       });
       content = parts.join('\n\n');
+    } else if (ext === 'pdf') {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const totalPages = pdf.numPages;
+      const pageTexts = [];
+      for (let i = 1; i <= totalPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const text = textContent.items.map(item => item.str).join(' ');
+        if (text.trim()) pageTexts.push(`[第 ${i} 頁]\n${text}`);
+      }
+      content = pageTexts.join('\n\n') || '(PDF 無法提取文字，可能是掃描圖檔)';
+      sheetNames = [`共 ${totalPages} 頁`];
+    } else if (ext === 'pptx') {
+      const arrayBuffer = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const slideTexts = [];
+      let slideNum = 1;
+      while (true) {
+        const slideFile = zip.file(`ppt/slides/slide${slideNum}.xml`);
+        if (!slideFile) break;
+        const xml = await slideFile.async('text');
+        // Extract text from <a:t> tags in slide XML
+        const texts = [];
+        const regex = /<a:t>([^<]*)<\/a:t>/g;
+        let match;
+        while ((match = regex.exec(xml)) !== null) {
+          if (match[1].trim()) texts.push(match[1]);
+        }
+        if (texts.length > 0) slideTexts.push(`[投影片 ${slideNum}]\n${texts.join('\n')}`);
+        slideNum++;
+      }
+      content = slideTexts.join('\n\n') || '(PPTX 無法提取文字)';
+      sheetNames = [`共 ${slideNum - 1} 張投影片`];
+    } else if (ext === 'ppt') {
+      content = '(.ppt 舊格式不支援直接解析，建議轉存為 .pptx 後再上傳)';
     } else if (ext === 'csv' || ext === 'tsv') {
       content = await file.text();
     } else {
@@ -1407,7 +1443,7 @@ function renderRefFileList() {
   }
 
   zone.classList.add('has-files');
-  const iconMap = { xlsx: '\uD83D\uDCCA', xls: '\uD83D\uDCCA', csv: '\uD83D\uDCCB', tsv: '\uD83D\uDCCB', txt: '\uD83D\uDCC4', json: '\uD83D\uDD27', md: '\uD83D\uDCDD' };
+  const iconMap = { xlsx: '\uD83D\uDCCA', xls: '\uD83D\uDCCA', csv: '\uD83D\uDCCB', tsv: '\uD83D\uDCCB', txt: '\uD83D\uDCC4', json: '\uD83D\uDD27', md: '\uD83D\uDCDD', pdf: '\uD83D\uDCD5', pptx: '\uD83D\uDCFD', ppt: '\uD83D\uDCFD' };
 
   container.innerHTML = referenceFiles.map((f, i) => {
     const icon = iconMap[f.ext] || '\uD83D\uDCC1';
