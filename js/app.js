@@ -840,14 +840,21 @@ async function callAI(prompt) {
 
   switch (provider) {
     case 'gemini': {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      });
-      if (!res.ok) throw new Error(`Gemini API 錯誤: ${res.status}`);
-      const data = await res.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
+      let lastErr = null;
+      for (const gModel of geminiModels) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (res.status === 429) { lastErr = '429 速率限制，稍後再試'; continue; }
+        if (res.status === 403) throw new Error('Gemini API Key 無權限（403）。請到 Google AI Studio 重新產生 Key，或確認已啟用 Generative Language API');
+        if (!res.ok) throw new Error(`Gemini API 錯誤: ${res.status}`);
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      }
+      throw new Error(`Gemini: ${lastErr || '所有模型都失敗'}`);
     }
     case 'openrouter': {
       const model = localStorage.getItem('openrouterModel') || 'google/gemma-3n-e4b-it:free';
