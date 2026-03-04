@@ -78,14 +78,14 @@
         </div>
         <button class="ai-fill-btn" onclick="aiFillPhase(0)" id="ai-fill-0">&#10024; AI 幫我填這頁</button>
         <div class="field-group">
-          <div class="field-label">工具名稱</div>
+          <div class="field-label">工具名稱 <span class="required-mark">*必填</span></div>
           <div class="field-hint">用 2–4 個字命名這個工具</div>
-          <input type="text" id="f-toolName" placeholder="例如：熱阻計算器、BOM生成工具" data-phase="0" data-key="toolName">
+          <input type="text" id="f-toolName" placeholder="例如：熱阻計算器、BOM生成工具" data-phase="0" data-key="toolName" required>
         </div>
         <div class="field-group">
-          <div class="field-label">一句話描述</div>
-          <div class="field-hint">填入下方句型，幫助你釐清工具的核心價值</div>
-          <textarea id="f-oneLiner" rows="2" placeholder="這個工具讓 熱流工程師 可以透過 輸入功耗與材料參數，快速得到 熱阻分析報告" data-phase="0" data-key="oneLiner"></textarea>
+          <div class="field-label">工具概述 <span class="required-mark">*必填</span></div>
+          <div class="field-hint">請描述你想像中的工具內容，AI 會根據這段描述自動拆解並填入後續欄位</div>
+          <textarea id="f-oneLiner" rows="3" placeholder="例如：我想做一個給熱流工程師用的計算器，讓他們輸入功耗、材料參數和散熱片尺寸後，自動計算熱阻並產出分析報告，最好能匯出 PDF 給客戶" data-phase="0" data-key="oneLiner" required></textarea>
         </div>
         <div class="field-group">
           <div class="field-label">使用者</div>
@@ -152,23 +152,23 @@
           <textarea id="f-inputFields" rows="3" placeholder="例：&#10;元件名稱（文字）&#10;功耗（數字，單位：W）&#10;最大接面溫度（數字，單位：°C）" data-phase="1" data-key="inputFields"></textarea>
         </div>
         <div class="field-group">
-          <div class="field-label">輸出格式</div>
-          <div class="radio-group">
-            <div class="radio-option">
-              <input type="radio" name="outputFormat" id="out-screen" value="畫面顯示" data-phase="1" data-key="outputFormat">
+          <div class="field-label">輸出格式（可複選）</div>
+          <div class="checkbox-group">
+            <div class="checkbox-option">
+              <input type="checkbox" id="out-screen" value="畫面顯示" data-phase="1" data-key="outputFormat">
               <label for="out-screen">畫面顯示</label>
             </div>
-            <div class="radio-option">
-              <input type="radio" name="outputFormat" id="out-excel" value="匯出 Excel" data-phase="1" data-key="outputFormat">
+            <div class="checkbox-option">
+              <input type="checkbox" id="out-excel" value="匯出 Excel" data-phase="1" data-key="outputFormat">
               <label for="out-excel">匯出 Excel</label>
             </div>
-            <div class="radio-option">
-              <input type="radio" name="outputFormat" id="out-pdf" value="產生 PDF" data-phase="1" data-key="outputFormat">
+            <div class="checkbox-option">
+              <input type="checkbox" id="out-pdf" value="產生 PDF" data-phase="1" data-key="outputFormat">
               <label for="out-pdf">產生 PDF</label>
             </div>
-            <div class="radio-option">
-              <input type="radio" name="outputFormat" id="out-multi" value="多種格式" data-phase="1" data-key="outputFormat">
-              <label for="out-multi">多種格式</label>
+            <div class="checkbox-option">
+              <input type="checkbox" id="out-api" value="API 回傳" data-phase="1" data-key="outputFormat">
+              <label for="out-api">API 回傳</label>
             </div>
           </div>
         </div>
@@ -321,22 +321,22 @@
         </div>
         <button class="ai-fill-btn" onclick="aiFillPhase(5)" id="ai-fill-5">&#10024; AI 幫我填這頁</button>
         <div class="field-group">
-          <div class="field-label">部署平台</div>
-          <div class="radio-group">
-            <div class="radio-option">
-              <input type="radio" name="deployPlatform" id="dep-streamlit" value="Streamlit Cloud" data-phase="5" data-key="deployPlatform">
+          <div class="field-label">部署平台（可複選）</div>
+          <div class="checkbox-group">
+            <div class="checkbox-option">
+              <input type="checkbox" id="dep-streamlit" value="Streamlit Cloud" data-phase="5" data-key="deployPlatform">
               <label for="dep-streamlit">Streamlit Cloud</label>
             </div>
-            <div class="radio-option">
-              <input type="radio" name="deployPlatform" id="dep-ghpages" value="GitHub Pages" data-phase="5" data-key="deployPlatform">
+            <div class="checkbox-option">
+              <input type="checkbox" id="dep-ghpages" value="GitHub Pages" data-phase="5" data-key="deployPlatform">
               <label for="dep-ghpages">GitHub Pages</label>
             </div>
-            <div class="radio-option">
-              <input type="radio" name="deployPlatform" id="dep-local" value="本機執行" data-phase="5" data-key="deployPlatform">
+            <div class="checkbox-option">
+              <input type="checkbox" id="dep-local" value="本機執行" data-phase="5" data-key="deployPlatform">
               <label for="dep-local">本機執行</label>
             </div>
-            <div class="radio-option">
-              <input type="radio" name="deployPlatform" id="dep-other" value="其他" data-phase="5" data-key="deployPlatform">
+            <div class="checkbox-option">
+              <input type="checkbox" id="dep-other" value="其他" data-phase="5" data-key="deployPlatform">
               <label for="dep-other">其他</label>
             </div>
           </div>
