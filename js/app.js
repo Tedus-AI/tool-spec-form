@@ -840,7 +840,7 @@ async function callAI(prompt) {
 
   switch (provider) {
     case 'gemini': {
-      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
+      const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       let lastErr = null;
       for (const gModel of geminiModels) {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${apiKey}`, {
