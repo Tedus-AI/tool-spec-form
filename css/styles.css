@@ -968,6 +968,105 @@ textarea {
   color: inherit;
   margin-bottom: 0;
 }
+/* Reference file upload zone */
+.ref-upload-zone {
+  border: 2px dashed #D0D0D0;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  color: #999;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ref-upload-zone:hover {
+  border-color: #E8725A;
+  background: #FFF5F3;
+  color: #E8725A;
+}
+.ref-upload-zone.dragover {
+  border-color: #E8725A;
+  background: #FFF5F3;
+  color: #E8725A;
+}
+.ref-upload-zone.has-files {
+  border-style: solid;
+  border-color: #E8725A;
+  background: #FFF9F8;
+  padding: 10px;
+  min-height: auto;
+}
+.ref-upload-zone.has-files p {
+  font-size: 11px;
+  color: #E8725A;
+}
+.ref-upload-zone p {
+  font-size: 13px;
+  color: inherit;
+  margin-bottom: 0;
+}
+.ref-file-list {
+  margin-top: 8px;
+}
+.ref-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #F9F9F9;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.ref-file-item .ref-file-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ref-file-item .ref-file-name {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-file-item .ref-file-info {
+  color: #999;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.ref-file-item .ref-file-remove {
+  background: none;
+  border: none;
+  color: #E74C3C;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+}
+.ref-file-item .ref-file-remove:hover {
+  background: #FDECEA;
+}
+.ref-file-item .ref-file-preview-btn {
+  background: none;
+  border: 1px solid #DDD;
+  color: #666;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.ref-file-item .ref-file-preview-btn:hover {
+  background: #F0F0F0;
+}
+
 .skill-preview-list {
   margin-top: 12px;
 }

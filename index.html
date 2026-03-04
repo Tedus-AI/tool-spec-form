@@ -11,6 +11,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <!-- JSZip for .skill file parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- SheetJS for Excel parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- PDF.js for PDF parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 <body>
 
@@ -91,6 +96,16 @@
           <div class="field-label">工具概述 <span class="required-mark">*必填</span></div>
           <div class="field-hint">請描述你想像中的工具內容，AI 會根據這段描述自動拆解並填入後續欄位</div>
           <textarea id="f-oneLiner" rows="3" placeholder="例如：我想做一個給熱流工程師用的計算器，讓他們輸入功耗、材料參數和散熱片尺寸後，自動計算熱阻並產出分析報告，最好能匯出 PDF 給客戶" data-phase="0" data-key="oneLiner" required></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">參考檔案 <span style="font-size:11px;color:#999;font-weight:normal">（選填）</span></div>
+          <div class="field-hint">上傳現有的 Excel、CSV、PDF、PPT 或文字檔作為 AI 填表的參考資料。例如：以前用 Excel 做的 thermal report，AI 會參考裡面的欄位和格式來填寫規格。</div>
+          <div class="ref-upload-zone" id="ref-upload-zone" onclick="document.getElementById('ref-file-input').click()">
+            <p>&#128206; 點擊上傳參考檔案</p>
+            <p style="font-size:11px;margin-top:4px">支援 .xlsx、.csv、.pdf、.pptx、.txt、.json、.md（最多 3 個檔案）</p>
+          </div>
+          <input type="file" id="ref-file-input" accept=".xlsx,.xls,.csv,.txt,.json,.md,.tsv,.pdf,.pptx,.ppt" multiple style="display:none" onchange="handleRefFiles(this.files)">
+          <div class="ref-file-list" id="ref-file-list"></div>
         </div>
         <div class="field-group">
           <div class="field-label">使用者</div>
