@@ -83,6 +83,11 @@
           <input type="text" id="f-toolName" placeholder="例如：熱阻計算器、BOM生成工具" data-phase="0" data-key="toolName" required>
         </div>
         <div class="field-group">
+          <div class="field-label">GitHub Repo 名稱</div>
+          <div class="field-hint">將作為 GitHub 專案名稱，僅限英文、數字、連字號。會根據工具名稱自動產生，可自行修改</div>
+          <input type="text" id="f-repoName" placeholder="例如：thermal-resistance-calculator" data-phase="0" data-key="repoName" pattern="[a-zA-Z0-9\-]+" title="僅限英文字母、數字和連字號(-)">
+        </div>
+        <div class="field-group">
           <div class="field-label">工具概述 <span class="required-mark">*必填</span></div>
           <div class="field-hint">請描述你想像中的工具內容，AI 會根據這段描述自動拆解並填入後續欄位</div>
           <textarea id="f-oneLiner" rows="3" placeholder="例如：我想做一個給熱流工程師用的計算器，讓他們輸入功耗、材料參數和散熱片尺寸後，自動計算熱阻並產出分析報告，最好能匯出 PDF 給客戶" data-phase="0" data-key="oneLiner" required></textarea>
