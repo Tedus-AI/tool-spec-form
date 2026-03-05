@@ -1827,7 +1827,38 @@ ${p4.knownLimitations || '（未填寫）'}
 }
 
 function generatePreview() {
+  const source = document.querySelector('input[name="specSource"]:checked');
+  if (source && source.value === 'paste') {
+    const pasteInput = document.getElementById('spec-paste-input');
+    if (pasteInput && pasteInput.value.trim()) {
+      document.getElementById('preview-content').textContent = pasteInput.value.trim();
+      return;
+    }
+  }
   document.getElementById('preview-content').textContent = generateMarkdown();
+}
+
+function toggleSpecSource(mode) {
+  const formMode = document.getElementById('spec-form-mode');
+  const pasteMode = document.getElementById('spec-paste-mode');
+  if (mode === 'paste') {
+    formMode.style.display = 'none';
+    pasteMode.style.display = 'block';
+    syncPastedSpec();
+  } else {
+    formMode.style.display = 'block';
+    pasteMode.style.display = 'none';
+    generatePreview();
+  }
+}
+
+function syncPastedSpec() {
+  const input = document.getElementById('spec-paste-input');
+  if (input && input.value.trim()) {
+    document.getElementById('preview-content').textContent = input.value.trim();
+  } else {
+    document.getElementById('preview-content').textContent = '（請貼上 SPEC 內容）';
+  }
 }
 
 function copyPreview() {

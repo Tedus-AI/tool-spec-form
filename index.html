@@ -344,10 +344,6 @@
           <div class="field-label">部署平台（可複選）</div>
           <div class="checkbox-group">
             <div class="checkbox-option">
-              <input type="checkbox" id="dep-streamlit" value="Streamlit Cloud" data-phase="5" data-key="deployPlatform">
-              <label for="dep-streamlit">Streamlit Cloud</label>
-            </div>
-            <div class="checkbox-option">
               <input type="checkbox" id="dep-ghpages" value="GitHub Pages" data-phase="5" data-key="deployPlatform">
               <label for="dep-ghpages">GitHub Pages</label>
             </div>
@@ -423,14 +419,37 @@
             <div class="phase-name">預覽 &amp; 推送到 GitHub</div>
           </div>
         </div>
-        <button class="ai-fill-btn" onclick="aiOrganizeSpec()" id="ai-organize-btn">&#129302; AI 整理規格</button>
+        <div class="field-group">
+          <div class="field-label">SPEC 來源</div>
+          <div class="field-hint">選擇如何產生 SPEC.md：從表單資料自動生成，或貼上已在 Claude Chat 中寫好的內容</div>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="specSource" id="spec-src-form" value="form" checked onchange="toggleSpecSource('form')">
+              <label for="spec-src-form">從表單生成<span class="radio-sub">根據 Phase 0–5 的資料自動產生</span></label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="specSource" id="spec-src-paste" value="paste" onchange="toggleSpecSource('paste')">
+              <label for="spec-src-paste">貼上現有 SPEC<span class="radio-sub">已在 Claude Chat 寫好的規格，只需填 Phase 0（Repo 名稱）和 Phase 3（Skill）</span></label>
+            </div>
+          </div>
+        </div>
+        <div id="spec-form-mode">
+          <button class="ai-fill-btn" onclick="aiOrganizeSpec()" id="ai-organize-btn">&#129302; AI 整理規格</button>
+        </div>
+        <div id="spec-paste-mode" style="display:none">
+          <div class="field-group">
+            <div class="field-label">貼上 SPEC 內容</div>
+            <div class="field-hint">將 Claude Chat 中產生的 SPEC 全文貼入，推送時會直接使用這份內容</div>
+            <textarea id="spec-paste-input" rows="12" placeholder="# 工具名稱 — 開發規格書&#10;&#10;將完整的 SPEC.md 內容貼在這裡..." oninput="syncPastedSpec()"></textarea>
+          </div>
+        </div>
         <div class="field-group">
           <div class="field-label">預覽生成的規格文件</div>
           <div class="field-hint">這就是會推送到 GitHub 的 SPEC.md 內容</div>
           <div class="preview-wrapper">
             <button class="copy-btn" onclick="copyPreview()">複製</button>
             <div class="preview-box">
-              <pre id="preview-content">（點擊「AI 整理規格」或直接預覽）</pre>
+              <pre id="preview-content">（選擇 SPEC 來源後產生預覽）</pre>
             </div>
           </div>
         </div>
