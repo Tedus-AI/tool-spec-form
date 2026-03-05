@@ -501,6 +501,30 @@ textarea {
   color: #5CB88A;
 }
 
+/* Spec paste textarea */
+#spec-paste-input {
+  width: 100%;
+  min-height: 240px;
+  padding: 16px;
+  font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  border: 2px dashed #2D9B6E;
+  border-radius: 10px;
+  background: #F6FFF9;
+  color: #1a1a1a;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#spec-paste-input:focus {
+  border-color: #27AE60;
+  box-shadow: 0 0 0 3px rgba(45, 155, 110, 0.15);
+  outline: none;
+}
+#spec-paste-input::placeholder {
+  color: #aaa;
+}
+
 /* Checkbox Group */
 .checkbox-group {
   display: flex;
