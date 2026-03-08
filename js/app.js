@@ -127,7 +127,11 @@ function showPhase(phase) {
 
   updateProgress();
 
-  if (phase === 6) generatePreview();
+  if (phase === 6) {
+    generatePreview();
+    refreshSkillPushList();
+    updatePushButtonText();
+  }
 }
 
 function validatePhase(phase) {
@@ -150,7 +154,12 @@ function validatePhase(phase) {
 function nextPhase() {
   if (!validatePhase(currentPhase)) return;
   if (currentPhase === TOTAL_PHASES - 1) {
-    pushToGitHub();
+    const pushMode = document.querySelector('input[name="pushMode"]:checked');
+    if (pushMode && pushMode.value === 'skill') {
+      pushSkillsOnly();
+    } else {
+      pushToGitHub();
+    }
     return;
   }
   currentPhase = Math.min(TOTAL_PHASES - 1, currentPhase + 1);
@@ -1667,6 +1676,167 @@ async function createSkillsRepo() {
   } catch (e) {
     resultEl.innerHTML = '\u274C ' + e.message;
     resultEl.style.color = '#E8725A';
+  }
+}
+
+// ===================================================================
+// PUSH MODE: Toggle & Skill-Only Push
+// ===================================================================
+
+function togglePushMode(mode) {
+  const fullSection = document.getElementById('full-push-section');
+  const skillSection = document.getElementById('skill-push-section');
+  if (mode === 'skill') {
+    fullSection.style.display = 'none';
+    skillSection.style.display = 'block';
+    refreshSkillPushList();
+  } else {
+    fullSection.style.display = 'block';
+    skillSection.style.display = 'none';
+  }
+  updatePushButtonText();
+}
+
+function updatePushButtonText() {
+  const nextBtn = document.getElementById('next-btn');
+  if (currentPhase !== TOTAL_PHASES - 1) return;
+  const pushMode = document.querySelector('input[name="pushMode"]:checked');
+  if (pushMode && pushMode.value === 'skill') {
+    nextBtn.textContent = '\u{1F4E6} 推送 Skills';
+    nextBtn.style.background = '#8E44AD';
+  } else {
+    nextBtn.textContent = '\u{1F680} 推送到 GitHub';
+    nextBtn.style.background = '#E74C3C';
+  }
+}
+
+function refreshSkillPushList() {
+  const container = document.getElementById('skill-push-list');
+  if (!container) return;
+  if (selectedSkills.length === 0) {
+    container.innerHTML = '<p class="empty-hint">\uFF08\u8ACB\u5148\u5728 Phase 3 \u9078\u64C7 Skill\uFF09</p>';
+    return;
+  }
+  container.innerHTML = selectedSkills.map(filename => {
+    const skill = allSkillsFromRepo.find(s => s.filename === filename);
+    const name = skill ? skill.name : filename;
+    return `<div class="skill-push-item"><span class="skill-push-icon">\u{1F4C4}</span> .claude/skills/${filename}<span class="skill-push-name">${name}</span></div>`;
+  }).join('');
+}
+
+async function readFileFromRepo(owner, repo, path, token) {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return decodeURIComponent(escape(atob(data.content)));
+}
+
+function updateSkillPushStep(step, state) {
+  const el = document.getElementById(`skill-push-step-${step}`);
+  if (!el) return;
+  el.className = `push-step ${state}`;
+  const icons = { active: '\u23F3', done: '\u2705', error: '\u274C', '': '\u25CB' };
+  el.querySelector('.push-step-icon').textContent = icons[state] || '\u25CB';
+}
+
+async function pushSkillsOnly() {
+  const token = localStorage.getItem('ghToken');
+  const username = localStorage.getItem('ghUsername');
+  if (!token || !username) {
+    showStatus('error', '\u8ACB\u5148\u5728\u8A2D\u5B9A\u9801\u586B\u5165 GitHub Token');
+    return;
+  }
+
+  const repoName = document.getElementById('skill-push-repo').value.trim();
+  if (!repoName) {
+    showStatus('error', '\u8ACB\u8F38\u5165\u76EE\u6A19 Repo \u540D\u7A31');
+    document.getElementById('skill-push-repo').focus();
+    return;
+  }
+
+  if (selectedSkills.length === 0) {
+    showStatus('error', '\u8ACB\u5148\u5728 Phase 3 \u9078\u64C7\u81F3\u5C11\u4E00\u500B Skill');
+    return;
+  }
+
+  // Show progress
+  document.getElementById('skill-push-progress').style.display = 'flex';
+  document.getElementById('push-complete').style.display = 'none';
+  showStatus('loading', '\u6B63\u5728\u63A8\u9001 Skills...');
+
+  try {
+    // Step 1: Verify repo exists
+    updateSkillPushStep(1, 'active');
+    const checkRes = await fetch(`https://api.github.com/repos/${username}/${repoName}`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!checkRes.ok) {
+      throw new Error(`Repo "${username}/${repoName}" \u4E0D\u5B58\u5728\u6216\u7121\u6B0A\u9650\u5B58\u53D6`);
+    }
+    updateSkillPushStep(1, 'done');
+
+    // Step 2: Push skills
+    updateSkillPushStep(2, 'active');
+    const pushedSkills = [];
+    const skillsRepo = localStorage.getItem('skillsRepo') || 'claude-skills';
+    for (const skillFile of selectedSkills) {
+      const skill = allSkillsFromRepo.find(s => s.filename === skillFile);
+      if (skill && skill.content) {
+        const skillPath = `.claude/skills/${skillFile}`;
+        await pushFileToRepo(username, repoName, skillPath, skill.content, `Add skill: ${skillFile}`, token);
+        pushedSkills.push({ name: skill.name, filename: skillFile, description: skill.description });
+      }
+    }
+    updateSkillPushStep(2, 'done');
+
+    // Step 3: Read existing CLAUDE.md and merge skill list
+    updateSkillPushStep(3, 'active');
+    const existingClaudeMd = await readFileFromRepo(username, repoName, 'CLAUDE.md', token);
+
+    let newClaudeMd;
+    const skillListBlock = pushedSkills.map(s =>
+      `- .claude/skills/${s.filename}\uFF1A${s.description || s.name}`
+    ).join('\n');
+    const skillSection = `## \u958B\u59CB\u524D\u8ACB\u95B1\u8B80\u4EE5\u4E0B Skill \u6A94\u6848\n${skillListBlock}`;
+
+    if (existingClaudeMd) {
+      // Check if skill section already exists
+      const skillSectionRegex = /## 開始前請閱讀以下 Skill 檔案[\s\S]*?(?=\n## |\n---|\Z|$)/;
+      if (skillSectionRegex.test(existingClaudeMd)) {
+        // Replace existing skill section
+        newClaudeMd = existingClaudeMd.replace(skillSectionRegex, skillSection);
+      } else {
+        // Append skill section at the end
+        newClaudeMd = existingClaudeMd.trimEnd() + '\n\n' + skillSection + '\n';
+      }
+    } else {
+      // Create minimal CLAUDE.md
+      newClaudeMd = `# Claude Code \u555F\u52D5\u8AAA\u660E\n\n${skillSection}\n`;
+    }
+
+    await pushFileToRepo(username, repoName, 'CLAUDE.md', newClaudeMd, 'Update CLAUDE.md: add skill references', token);
+    updateSkillPushStep(3, 'done');
+
+    // Show completion
+    showStatus('success', 'Skills \u63A8\u9001\u5B8C\u6210\uFF01');
+    const repoUrl = `https://github.com/${username}/${repoName}`;
+    document.getElementById('push-complete').style.display = 'block';
+    document.getElementById('push-complete').innerHTML = `
+      <h3>\u2705 Skills \u63A8\u9001\u6210\u529F\uFF01</h3>
+      <div class="file-list">
+        ${pushedSkills.map(s => `<a href="${repoUrl}/blob/main/.claude/skills/${s.filename}" target="_blank">\u{1F4C4} .claude/skills/${s.filename}</a>`).join('')}
+        <a href="${repoUrl}/blob/main/CLAUDE.md" target="_blank">\u{1F4C4} CLAUDE.md\uFF08\u5DF2\u66F4\u65B0\uFF09</a>
+      </div>
+      <a href="${repoUrl}" target="_blank" class="btn btn-primary" style="display:inline-block;text-decoration:none;margin-top:12px">\u{1F517} \u958B\u555F GitHub Repo</a>
+    `;
+  } catch (e) {
+    showStatus('error', '\u63A8\u9001\u5931\u6557\uFF1A' + e.message);
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById(`skill-push-step-${i}`);
+      if (el && el.classList.contains('active')) updateSkillPushStep(i, 'error');
+    }
   }
 }
 
