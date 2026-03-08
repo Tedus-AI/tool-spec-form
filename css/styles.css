@@ -533,6 +533,7 @@ textarea {
 }
 .repo-select {
   flex: 1;
+  min-width: 0;
   padding: 10px 14px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -540,6 +541,7 @@ textarea {
   background: #fff;
   color: #333;
   cursor: pointer;
+  box-sizing: border-box;
 }
 .repo-select:focus {
   border-color: #8E44AD;
