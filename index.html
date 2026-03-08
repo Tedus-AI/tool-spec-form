@@ -427,11 +427,11 @@
           <div class="radio-group">
             <div class="radio-option">
               <input type="radio" name="pushMode" id="push-mode-full" value="full" checked onchange="togglePushMode('full')">
-              <label for="push-mode-full">完整推送（新專案）<span class="radio-sub">建立 Repo + SPEC.md + Skills + CLAUDE.md</span></label>
+              <label for="push-mode-full" onclick="setTimeout(()=>togglePushMode('full'),0)">完整推送（新專案）<span class="radio-sub">建立 Repo + SPEC.md + Skills + CLAUDE.md</span></label>
             </div>
             <div class="radio-option">
               <input type="radio" name="pushMode" id="push-mode-skill" value="skill" onchange="togglePushMode('skill')">
-              <label for="push-mode-skill">僅推送 Skill 到現有 Repo<span class="radio-sub">只推 .claude/skills/ 並更新 CLAUDE.md 的 Skill 清單</span></label>
+              <label for="push-mode-skill" onclick="setTimeout(()=>togglePushMode('skill'),0)">僅推送 Skill 到現有 Repo<span class="radio-sub">只推 .claude/skills/ 並更新 CLAUDE.md 的 Skill 清單</span></label>
             </div>
           </div>
         </div>
@@ -484,9 +484,14 @@
         <!-- === Skill-Only Push Mode === -->
         <div id="skill-push-section" style="display:none">
           <div class="field-group">
-            <div class="field-label">目標 Repo 名稱</div>
-            <div class="field-hint">輸入已存在的 GitHub Repo 名稱（僅名稱，不含 username），例如：my-tool</div>
-            <input type="text" id="skill-push-repo" placeholder="例：my-tool">
+            <div class="field-label">目標 Repo</div>
+            <div class="field-hint">從你的 GitHub 帳號中選擇目標 Repo</div>
+            <div class="repo-select-row">
+              <select id="skill-push-repo" class="repo-select">
+                <option value="">-- 請選擇 Repo --</option>
+              </select>
+              <button class="btn btn-secondary repo-refresh-btn" onclick="loadUserRepos()">&#x21BB; 重新整理</button>
+            </div>
           </div>
           <div class="field-group">
             <div class="field-label">將推送的 Skills</div>
