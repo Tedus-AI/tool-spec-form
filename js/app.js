@@ -1684,12 +1684,19 @@ async function createSkillsRepo() {
 // ===================================================================
 
 function togglePushMode(mode) {
+  // Ensure radio is checked
+  const radio = document.getElementById(mode === 'skill' ? 'push-mode-skill' : 'push-mode-full');
+  if (radio) radio.checked = true;
+
   const fullSection = document.getElementById('full-push-section');
   const skillSection = document.getElementById('skill-push-section');
+  if (!fullSection || !skillSection) return;
+
   if (mode === 'skill') {
     fullSection.style.display = 'none';
     skillSection.style.display = 'block';
     refreshSkillPushList();
+    loadUserRepos();
   } else {
     fullSection.style.display = 'block';
     skillSection.style.display = 'none';
@@ -1724,6 +1731,47 @@ function refreshSkillPushList() {
   }).join('');
 }
 
+let _userReposCache = null;
+async function loadUserRepos() {
+  const token = localStorage.getItem('ghToken');
+  const username = localStorage.getItem('ghUsername');
+  const select = document.getElementById('skill-push-repo');
+  if (!token || !username || !select) return;
+
+  const prevValue = select.value;
+  select.innerHTML = '<option value="">載入中...</option>';
+
+  try {
+    let repos = [];
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
+      const res = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}&sort=updated&affiliation=owner`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      repos = repos.concat(data);
+      hasMore = data.length === 100;
+      page++;
+    }
+    _userReposCache = repos;
+
+    select.innerHTML = '<option value="">-- 請選擇 Repo --</option>';
+    repos.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.name;
+      opt.textContent = r.name + (r.description ? ` — ${r.description}` : '');
+      select.appendChild(opt);
+    });
+
+    // Restore previous selection
+    if (prevValue) select.value = prevValue;
+  } catch (e) {
+    select.innerHTML = '<option value="">載入失敗，請確認 GitHub Token</option>';
+  }
+}
+
 async function readFileFromRepo(owner, repo, path, token) {
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
@@ -1751,7 +1799,7 @@ async function pushSkillsOnly() {
 
   const repoName = document.getElementById('skill-push-repo').value.trim();
   if (!repoName) {
-    showStatus('error', '\u8ACB\u8F38\u5165\u76EE\u6A19 Repo \u540D\u7A31');
+    showStatus('error', '\u8ACB\u9078\u64C7\u76EE\u6A19 Repo');
     document.getElementById('skill-push-repo').focus();
     return;
   }
