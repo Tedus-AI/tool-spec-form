@@ -587,8 +587,11 @@ async function saveToFirebase() {
 }
 
 function updateSidebarProjectName(id, name) {
-  const item = document.querySelector(`.project-item[data-id="${id}"] .project-item-name`);
-  if (item) item.textContent = name || '未命名工具';
+  const items = document.querySelectorAll(`.project-item[data-id="${id}"] .project-item-name`);
+  items.forEach(item => {
+    const prefix = item.textContent.startsWith('\u{1F517}') ? '\u{1F517} ' : '';
+    item.textContent = prefix + (name || '未命名工具');
+  });
 }
 
 // ===================================================================
@@ -598,18 +601,15 @@ function updateSidebarProjectName(id, name) {
 async function loadProjectList() {
   try {
     const snapshot = await db.collection(COLLECTION).orderBy('updatedAt', 'desc').get();
-    const listEl = document.getElementById('project-list');
-    const emptyEl = document.getElementById('sidebar-empty');
+    const ghListEl = document.getElementById('github-repos-list');
+    const draftListEl = document.getElementById('draft-projects-list');
+    const ghSection = document.getElementById('github-repos-section');
 
-    if (snapshot.empty) {
-      listEl.innerHTML = '';
-      listEl.appendChild(emptyEl);
-      emptyEl.style.display = 'block';
-      return;
-    }
+    ghListEl.innerHTML = '';
+    draftListEl.innerHTML = '';
 
-    emptyEl.style.display = 'none';
-    listEl.innerHTML = '';
+    let ghCount = 0;
+    let draftCount = 0;
 
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -623,19 +623,138 @@ async function loadProjectList() {
 
       const updatedAt = data.updatedAt ? data.updatedAt.toDate() : new Date();
       const timeStr = formatRelativeTime(updatedAt);
+      const isPushed = !!data.githubRepo;
 
       item.innerHTML = `
         <div class="project-item-info">
-          <div class="project-item-name">${escapeHtml(data.name || '未命名工具')}</div>
-          <div class="project-item-time">${timeStr}</div>
+          <div class="project-item-name">${isPushed ? '\u{1F517} ' : ''}${escapeHtml(data.name || '未命名工具')}</div>
+          <div class="project-item-time">${isPushed ? data.githubRepo + ' · ' : ''}${timeStr}</div>
         </div>
         <button class="project-item-delete" onclick="showDeleteConfirm('${doc.id}', '${escapeHtml(data.name || '未命名工具')}')" title="刪除">&#128465;</button>
       `;
-      listEl.appendChild(item);
+
+      if (isPushed) {
+        ghListEl.appendChild(item);
+        ghCount++;
+      } else {
+        draftListEl.appendChild(item);
+        draftCount++;
+      }
     });
+
+    // Update counts
+    document.getElementById('github-repos-count').textContent = ghCount;
+    document.getElementById('draft-projects-count').textContent = draftCount;
+    ghSection.style.display = ghCount > 0 ? 'block' : 'none';
+
+    if (draftCount === 0 && ghCount === 0) {
+      draftListEl.innerHTML = '<div class="sidebar-empty" style="display:block">尚無專案，點擊上方新增</div>';
+    }
+
+    // Also load GitHub repos that are NOT in our database
+    loadGitHubRepoList();
   } catch (e) {
     setSaveStatus('offline');
   }
+}
+
+async function loadGitHubRepoList() {
+  const token = localStorage.getItem('ghToken');
+  const username = localStorage.getItem('ghUsername');
+  if (!token || !username) return;
+
+  const ghListEl = document.getElementById('github-repos-list');
+  const ghSection = document.getElementById('github-repos-section');
+
+  // Get existing project repo names from the current list
+  const existingRepos = new Set();
+  ghListEl.querySelectorAll('.project-item').forEach(item => {
+    const timeEl = item.querySelector('.project-item-time');
+    if (timeEl) {
+      const repoName = timeEl.textContent.split(' · ')[0];
+      if (repoName) existingRepos.add(repoName);
+    }
+  });
+
+  try {
+    const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner', {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!res.ok) return;
+    const repos = await res.json();
+
+    repos.forEach(repo => {
+      if (existingRepos.has(repo.name)) return; // Already shown via Firestore
+      const item = document.createElement('div');
+      item.className = 'project-item github-repo-item';
+      item.dataset.repo = repo.name;
+      item.onclick = () => selectGitHubRepo(repo.name, repo.description);
+
+      item.innerHTML = `
+        <div class="project-item-info">
+          <div class="project-item-name">\u{1F4C1} ${escapeHtml(repo.name)}</div>
+          <div class="project-item-time">${escapeHtml(repo.description || '無描述')}</div>
+        </div>
+      `;
+      ghListEl.appendChild(item);
+    });
+
+    const totalCount = ghListEl.children.length;
+    document.getElementById('github-repos-count').textContent = totalCount;
+    ghSection.style.display = totalCount > 0 ? 'block' : 'none';
+  } catch (e) {
+    // Silent fail
+  }
+}
+
+function selectGitHubRepo(repoName, description) {
+  // Clear form and set up for skill-only push
+  clearForm();
+  currentProjectId = null;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('nav-bar').style.display = 'flex';
+  document.getElementById('top-bar-title').textContent = repoName;
+
+  // Jump to Phase 6 in skill-only mode
+  currentPhase = TOTAL_PHASES - 1;
+  showPhase(currentPhase);
+
+  // Set push mode to skill-only
+  setTimeout(() => {
+    togglePushMode('skill');
+    // Pre-fill the repo dropdown
+    const select = document.getElementById('skill-push-repo');
+    if (select) {
+      // Ensure repo is in the dropdown, add if not
+      let found = false;
+      for (const opt of select.options) {
+        if (opt.value === repoName) { found = true; break; }
+      }
+      if (!found) {
+        const opt = document.createElement('option');
+        opt.value = repoName;
+        opt.textContent = repoName + (description ? ` — ${description}` : '');
+        select.appendChild(opt);
+      }
+      select.value = repoName;
+    }
+  }, 100);
+
+  // Update sidebar active state
+  document.querySelectorAll('.project-item').forEach(item => item.classList.remove('active'));
+  const repoItem = document.querySelector(`.project-item[data-repo="${repoName}"]`);
+  if (repoItem) repoItem.classList.add('active');
+
+  closeSidebar();
+}
+
+function toggleSidebarSection(sectionId) {
+  const body = document.getElementById(sectionId + '-list');
+  const icon = document.querySelector(`#${sectionId}-section .sidebar-section-icon`);
+  if (!body) return;
+  const isCollapsed = body.style.display === 'none';
+  body.style.display = isCollapsed ? 'block' : 'none';
+  if (icon) icon.textContent = isCollapsed ? '\u25BC' : '\u25B6';
 }
 
 function formatRelativeTime(date) {
@@ -2242,6 +2361,17 @@ async function pushToGitHub() {
       </div>
       <a href="${repoUrl}" target="_blank" class="btn btn-primary" style="display:inline-block;text-decoration:none;margin-top:12px">\u{1F517} 開啟 GitHub Repo</a>
     `;
+
+    // Mark project as pushed in Firestore → moves from draft to GitHub section
+    if (currentProjectId) {
+      try {
+        await db.collection(COLLECTION).doc(currentProjectId).update({
+          githubRepo: repoName,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        await loadProjectList();
+      } catch (e) { /* silent */ }
+    }
   } catch (e) {
     showStatus('error', '推送失敗：' + e.message);
     // Mark current step as error

@@ -29,8 +29,27 @@
       <button class="sidebar-close" id="sidebar-close-btn" onclick="closeSidebar()">&times;</button>
     </div>
     <button class="sidebar-new-btn" onclick="showNewProjectModal()">+ 新增專案</button>
-    <div class="project-list" id="project-list">
-      <div class="sidebar-empty" id="sidebar-empty">尚無專案，點擊上方新增</div>
+
+    <div class="sidebar-scroll">
+      <!-- GitHub 已創建的專案 -->
+      <div class="sidebar-section" id="github-repos-section" style="display:none">
+        <div class="sidebar-section-header" onclick="toggleSidebarSection('github-repos')">
+          <span class="sidebar-section-icon">&#9660;</span>
+          <span>已創建（GitHub）</span>
+          <span class="sidebar-section-count" id="github-repos-count">0</span>
+        </div>
+        <div class="sidebar-section-body" id="github-repos-list"></div>
+      </div>
+
+      <!-- 草稿專案 -->
+      <div class="sidebar-section" id="draft-projects-section">
+        <div class="sidebar-section-header" onclick="toggleSidebarSection('draft-projects')">
+          <span class="sidebar-section-icon">&#9660;</span>
+          <span>草稿專案</span>
+          <span class="sidebar-section-count" id="draft-projects-count">0</span>
+        </div>
+        <div class="sidebar-section-body" id="draft-projects-list"></div>
+      </div>
     </div>
   </aside>
 
