@@ -1400,10 +1400,13 @@ async function refreshSkills() {
     }
 
     const files = await res.json();
-    const mdFiles = files.filter(f => f.name.endsWith('.md') && f.name !== 'README.md');
+    const mdFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.md') && f.name !== 'README.md');
 
     allSkillsFromRepo = [];
+    const seen = new Set();
     for (const file of mdFiles) {
+      if (seen.has(file.name)) continue;
+      seen.add(file.name);
       try {
         const contentRes = await fetch(file.download_url);
         const content = await contentRes.text();
@@ -1462,8 +1465,18 @@ function renderSkillCards(skills) {
   countEl.style.display = 'block';
   countEl.textContent = `已選 ${selectedSkills.length} 個 Skill`;
 
+  // Deduplicate by filename
+  const uniqueSkills = [];
+  const seenNames = new Set();
+  skills.forEach(s => {
+    if (!seenNames.has(s.filename)) {
+      seenNames.add(s.filename);
+      uniqueSkills.push(s);
+    }
+  });
+
   let html = '<div class="skill-cards">';
-  skills.forEach(skill => {
+  uniqueSkills.forEach(skill => {
     const isSelected = selectedSkills.includes(skill.filename);
     html += `
       <div class="skill-card ${isSelected ? 'selected' : ''}" onclick="toggleSkill('${escapeHtml(skill.filename)}', this)">
