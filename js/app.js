@@ -37,6 +37,7 @@ let isLoading = false;
 let selectedSkills = [];
 let parsedSkillFiles = [];
 let allSkillsFromRepo = [];
+let skillOnlyMode = false;
 let referenceFiles = []; // Parsed reference files for AI context
 
 // ===================================================================
@@ -52,6 +53,53 @@ function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('active');
 }
+
+// Sidebar drag-to-resize
+(function initSidebarResize() {
+  const handle = document.getElementById('sidebar-resize-handle');
+  const sidebar = document.getElementById('sidebar');
+  const main = document.querySelector('.main-content');
+  if (!handle || !sidebar) return;
+
+  // Restore saved width
+  const saved = localStorage.getItem('sidebarWidth');
+  if (saved) {
+    const w = parseInt(saved, 10);
+    if (w >= 200 && w <= 600) {
+      sidebar.style.width = w + 'px';
+      handle.style.left = w + 'px';
+      if (main) main.style.marginLeft = w + 'px';
+    }
+  }
+
+  let isDragging = false;
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+    handle.classList.add('dragging');
+    sidebar.style.transition = 'none';
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    let w = Math.max(200, Math.min(600, e.clientX));
+    sidebar.style.width = w + 'px';
+    handle.style.left = w + 'px';
+    if (main) main.style.marginLeft = w + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    handle.classList.remove('dragging');
+    sidebar.style.transition = '';
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    localStorage.setItem('sidebarWidth', parseInt(sidebar.style.width, 10));
+  });
+})();
 
 // ===================================================================
 // MODAL HELPERS
@@ -79,31 +127,44 @@ function showNewProjectModal() {
 function updateProgress() {
   // Desktop/Tablet progress
   const container = document.getElementById('progress-steps');
+  const visiblePhases = skillOnlyMode ? [3, 6] : [...Array(TOTAL_PHASES).keys()];
   let html = '';
-  for (let i = 0; i < TOTAL_PHASES; i++) {
+  visiblePhases.forEach((i, idx) => {
     const phase = PHASES[i];
     let dotClass = 'progress-step-dot';
     let labelClass = '';
-    if (i < currentPhase) { dotClass += ' done clickable'; labelClass = 'done'; }
-    else if (i === currentPhase) { dotClass += ' active'; labelClass = 'active'; }
+    if (skillOnlyMode) {
+      if (i === currentPhase) { dotClass += ' active'; labelClass = 'active'; }
+      else if (i < currentPhase) { dotClass += ' done clickable'; labelClass = 'done'; }
+      dotClass += ' clickable';
+    } else {
+      if (i < currentPhase) { dotClass += ' done clickable'; labelClass = 'done'; }
+      else if (i === currentPhase) { dotClass += ' active'; labelClass = 'active'; }
+    }
 
     html += `<div class="progress-step-item ${labelClass}">`;
     html += `<div class="${dotClass}" onclick="goToPhase(${i})" title="${phase.name}">`;
-    html += i < currentPhase ? '&#10003;' : i;
+    html += (i < currentPhase && !skillOnlyMode) ? '&#10003;' : (skillOnlyMode ? (idx + 1) : i);
     html += `</div>`;
     html += `<span class="progress-step-label">${phase.name}</span>`;
-    if (i < TOTAL_PHASES - 1) {
+    if (idx < visiblePhases.length - 1) {
       html += `<div class="progress-step-line ${i < currentPhase ? 'done' : ''}"></div>`;
     }
     html += `</div>`;
-  }
+  });
   container.innerHTML = html;
 
   // Mobile progress
   const mobileText = document.getElementById('progress-mobile-text');
   const mobileFill = document.getElementById('progress-mobile-fill');
-  mobileText.textContent = `Step ${currentPhase + 1} / ${TOTAL_PHASES} — ${PHASES[currentPhase].name}`;
-  mobileFill.style.width = `${((currentPhase + 1) / TOTAL_PHASES) * 100}%`;
+  if (skillOnlyMode) {
+    const stepNum = currentPhase === 3 ? 1 : 2;
+    mobileText.textContent = `Step ${stepNum} / 2 — ${PHASES[currentPhase].name}`;
+    mobileFill.style.width = `${stepNum * 50}%`;
+  } else {
+    mobileText.textContent = `Step ${currentPhase + 1} / ${TOTAL_PHASES} — ${PHASES[currentPhase].name}`;
+    mobileFill.style.width = `${((currentPhase + 1) / TOTAL_PHASES) * 100}%`;
+  }
 }
 
 function showPhase(phase) {
@@ -113,13 +174,16 @@ function showPhase(phase) {
   }
 
   const navBar = document.getElementById('nav-bar');
-  navBar.style.display = currentProjectId ? 'flex' : 'none';
+  navBar.style.display = (currentProjectId || skillOnlyMode) ? 'flex' : 'none';
 
-  document.getElementById('prev-btn').disabled = phase === 0;
+  document.getElementById('prev-btn').disabled = skillOnlyMode ? (phase === 3) : (phase === 0);
   const nextBtn = document.getElementById('next-btn');
   if (phase === TOTAL_PHASES - 1) {
     nextBtn.textContent = '\u{1F680} 推送到 GitHub';
     nextBtn.style.background = '#E74C3C';
+  } else if (skillOnlyMode) {
+    nextBtn.innerHTML = '前往推送 &#8594;';
+    nextBtn.style.background = '#8E44AD';
   } else {
     nextBtn.innerHTML = '下一步 &#8594;';
     nextBtn.style.background = '#2D9B6E';
@@ -162,19 +226,37 @@ function nextPhase() {
     }
     return;
   }
-  currentPhase = Math.min(TOTAL_PHASES - 1, currentPhase + 1);
+  if (skillOnlyMode) {
+    // Skill-only: Phase 3 → Phase 6
+    currentPhase = TOTAL_PHASES - 1;
+  } else {
+    currentPhase = Math.min(TOTAL_PHASES - 1, currentPhase + 1);
+  }
   showPhase(currentPhase);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   saveCurrentPhase();
 }
 
 function prevPhase() {
-  currentPhase = Math.max(0, currentPhase - 1);
+  if (skillOnlyMode) {
+    // Skill-only: Phase 6 → Phase 3
+    currentPhase = 3;
+  } else {
+    currentPhase = Math.max(0, currentPhase - 1);
+  }
   showPhase(currentPhase);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function goToPhase(phase) {
+  if (skillOnlyMode) {
+    if (phase === 3 || phase === TOTAL_PHASES - 1) {
+      currentPhase = phase;
+      showPhase(currentPhase);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return;
+  }
   if (phase <= currentPhase || phase < currentPhase) {
     currentPhase = phase;
     showPhase(currentPhase);
@@ -711,12 +793,13 @@ function selectGitHubRepo(repoName, description) {
   // Clear form and set up for skill-only push
   clearForm();
   currentProjectId = null;
+  skillOnlyMode = true;
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('nav-bar').style.display = 'flex';
   document.getElementById('top-bar-title').textContent = repoName;
 
-  // Jump to Phase 6 in skill-only mode
-  currentPhase = TOTAL_PHASES - 1;
+  // Start at Phase 3 (Skill selection) so user can pick skills first
+  currentPhase = 3;
   showPhase(currentPhase);
 
   // Set push mode to skill-only
@@ -771,6 +854,7 @@ function formatRelativeTime(date) {
 }
 
 async function selectProject(docId) {
+  skillOnlyMode = false;
   // Force save current project before switching
   if (currentProjectId && saveTimer) {
     clearTimeout(saveTimer);
@@ -808,6 +892,7 @@ async function selectProject(docId) {
 }
 
 async function createNewProject() {
+  skillOnlyMode = false;
   const nameInput = document.getElementById('new-project-name');
   const name = nameInput.value.trim();
   if (!name) {
