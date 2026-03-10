@@ -81,6 +81,61 @@ input[type="text"], input[type="password"], input[type="number"], textarea, sele
   color: #2D9B6E;
   background: rgba(45, 155, 110, 0.1);
 }
+/* Sidebar Scroll */
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px;
+}
+
+/* Sidebar Sections */
+.sidebar-section {
+  margin-top: 4px;
+}
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #777;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+.sidebar-section-header:hover {
+  color: #aaa;
+}
+.sidebar-section-icon {
+  font-size: 8px;
+  transition: transform 0.2s;
+}
+.sidebar-section-count {
+  margin-left: auto;
+  background: #333;
+  color: #999;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+}
+.sidebar-section-body {
+  overflow-y: auto;
+}
+.github-repo-item {
+  border-left-color: transparent !important;
+}
+.github-repo-item:hover {
+  border-left-color: #8E44AD !important;
+}
+.github-repo-item.active {
+  border-left-color: #8E44AD !important;
+}
+
 .project-list {
   flex: 1;
   overflow-y: auto;
