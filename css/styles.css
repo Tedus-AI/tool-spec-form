@@ -21,7 +21,7 @@ input[type="text"], input[type="password"], input[type="number"], textarea, sele
 
 /* Sidebar (Desktop) */
 .sidebar {
-  width: 240px;
+  width: 300px;
   background: #1A1A1A;
   color: #FFF;
   display: flex;
@@ -32,6 +32,21 @@ input[type="text"], input[type="password"], input[type="number"], textarea, sele
   bottom: 0;
   z-index: 200;
   transition: transform 0.3s ease;
+}
+.sidebar-resize-handle {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  left: 300px;
+  cursor: col-resize;
+  z-index: 201;
+  background: transparent;
+  transition: background 0.15s;
+}
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle.dragging {
+  background: #2D9B6E;
 }
 .sidebar-header {
   padding: 16px;
@@ -209,7 +224,7 @@ input[type="text"], input[type="password"], input[type="number"], textarea, sele
 /* Main Content Area */
 .main-content {
   flex: 1;
-  margin-left: 240px;
+  margin-left: 300px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -1489,6 +1504,9 @@ textarea {
 
 /* ===== Responsive: Tablet (768px+) ===== */
 @media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-resize-handle {
+    display: none;
+  }
   .sidebar {
     transform: translateX(-100%);
   }
@@ -1520,6 +1538,9 @@ textarea {
 
 /* ===== Responsive: Mobile (< 768px) ===== */
 @media (max-width: 767px) {
+  .sidebar-resize-handle {
+    display: none;
+  }
   .sidebar {
     width: 100%;
     max-width: 320px;
