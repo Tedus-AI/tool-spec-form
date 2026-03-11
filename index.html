@@ -464,15 +464,15 @@
             <div class="radio-group">
               <div class="radio-option">
                 <input type="radio" name="specSource" id="spec-src-form" value="form" checked onchange="toggleSpecSource('form')">
-                <label for="spec-src-form">從表單生成<span class="radio-sub">根據 Phase 0–5 的資料自動產生</span></label>
+                <label for="spec-src-form" onclick="setTimeout(()=>toggleSpecSource('form'),0)">從表單生成<span class="radio-sub">根據 Phase 0–5 的資料自動產生</span></label>
               </div>
               <div class="radio-option">
                 <input type="radio" name="specSource" id="spec-src-paste" value="paste" onchange="toggleSpecSource('paste')">
-                <label for="spec-src-paste">貼上現有 SPEC<span class="radio-sub">已在 Claude Chat 寫好的規格，只需填 Phase 0（Repo 名稱）和 Phase 3（Skill）</span></label>
+                <label for="spec-src-paste" onclick="setTimeout(()=>toggleSpecSource('paste'),0)">貼上現有 SPEC<span class="radio-sub">已在 Claude Chat 寫好的規格，只需填 Phase 0（Repo 名稱）和 Phase 3（Skill）</span></label>
               </div>
               <div class="radio-option">
                 <input type="radio" name="specSource" id="spec-src-upload" value="upload" onchange="toggleSpecSource('upload')">
-                <label for="spec-src-upload">上傳 .md 檔案<span class="radio-sub">上傳一或多個事先與 AI 討論好的 Markdown 檔案，合併為 SPEC</span></label>
+                <label for="spec-src-upload" onclick="setTimeout(()=>toggleSpecSource('upload'),0)">上傳 .md 檔案<span class="radio-sub">上傳一或多個事先與 AI 討論好的 Markdown 檔案，合併為 SPEC</span></label>
               </div>
             </div>
           </div>
