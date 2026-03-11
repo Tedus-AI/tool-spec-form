@@ -2291,6 +2291,11 @@ function generatePreview() {
 }
 
 function toggleSpecSource(mode) {
+  // Ensure radio is checked
+  const radioId = mode === 'paste' ? 'spec-src-paste' : mode === 'upload' ? 'spec-src-upload' : 'spec-src-form';
+  const radio = document.getElementById(radioId);
+  if (radio) radio.checked = true;
+
   const formMode = document.getElementById('spec-form-mode');
   const pasteMode = document.getElementById('spec-paste-mode');
   const uploadMode = document.getElementById('spec-upload-mode');
