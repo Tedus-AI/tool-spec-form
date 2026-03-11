@@ -460,7 +460,7 @@
         <div id="full-push-section">
           <div class="field-group">
             <div class="field-label">SPEC 來源</div>
-            <div class="field-hint">選擇如何產生 SPEC.md：從表單資料自動生成，或貼上已在 Claude Chat 中寫好的內容</div>
+            <div class="field-hint">選擇如何產生 SPEC.md：從表單資料自動生成、貼上文字、或上傳事先準備好的 .md 檔案</div>
             <div class="radio-group">
               <div class="radio-option">
                 <input type="radio" name="specSource" id="spec-src-form" value="form" checked onchange="toggleSpecSource('form')">
@@ -469,6 +469,10 @@
               <div class="radio-option">
                 <input type="radio" name="specSource" id="spec-src-paste" value="paste" onchange="toggleSpecSource('paste')">
                 <label for="spec-src-paste">貼上現有 SPEC<span class="radio-sub">已在 Claude Chat 寫好的規格，只需填 Phase 0（Repo 名稱）和 Phase 3（Skill）</span></label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="specSource" id="spec-src-upload" value="upload" onchange="toggleSpecSource('upload')">
+                <label for="spec-src-upload">上傳 .md 檔案<span class="radio-sub">上傳一或多個事先與 AI 討論好的 Markdown 檔案，合併為 SPEC</span></label>
               </div>
             </div>
           </div>
@@ -480,6 +484,18 @@
               <div class="field-label">貼上 SPEC 內容</div>
               <div class="field-hint">將 Claude Chat 中產生的 SPEC 全文貼入，推送時會直接使用這份內容</div>
               <textarea id="spec-paste-input" rows="12" placeholder="# 工具名稱 — 開發規格書&#10;&#10;將完整的 SPEC.md 內容貼在這裡..." oninput="syncPastedSpec()"></textarea>
+            </div>
+          </div>
+          <div id="spec-upload-mode" style="display:none">
+            <div class="field-group">
+              <div class="field-label">上傳 Markdown 檔案</div>
+              <div class="field-hint">可上傳多個 .md 檔，會依檔名排序後合併。每個檔案之間會自動加分隔線。</div>
+              <div class="spec-upload-zone" id="spec-upload-zone" onclick="document.getElementById('spec-md-input').click()">
+                <p>&#128196; 點擊或拖曳上傳 .md 檔案</p>
+                <p style="font-size:11px;margin-top:4px;color:#999">支援多選，可多次上傳追加</p>
+              </div>
+              <input type="file" id="spec-md-input" accept=".md,.markdown,.txt" multiple style="display:none" onchange="handleSpecMdFiles(this.files)">
+              <div class="spec-md-file-list" id="spec-md-file-list"></div>
             </div>
           </div>
           <div class="field-group">
