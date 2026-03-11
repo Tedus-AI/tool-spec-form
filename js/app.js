@@ -1699,14 +1699,27 @@ function buildRefFileContext() {
 // Drag & drop for reference file upload zone
 document.addEventListener('DOMContentLoaded', () => {
   const zone = document.getElementById('ref-upload-zone');
-  if (!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('dragover');
-    handleRefFiles(e.dataTransfer.files);
-  });
+  if (zone) {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      handleRefFiles(e.dataTransfer.files);
+    });
+  }
+
+  // Spec MD upload drag-and-drop
+  const specZone = document.getElementById('spec-upload-zone');
+  if (specZone) {
+    specZone.addEventListener('dragover', e => { e.preventDefault(); specZone.classList.add('dragover'); });
+    specZone.addEventListener('dragleave', () => specZone.classList.remove('dragover'));
+    specZone.addEventListener('drop', e => {
+      e.preventDefault();
+      specZone.classList.remove('dragover');
+      handleSpecMdFiles(e.dataTransfer.files);
+    });
+  }
 });
 
 // ===================================================================
@@ -2270,19 +2283,29 @@ function generatePreview() {
       return;
     }
   }
+  if (source && source.value === 'upload') {
+    syncUploadedMdPreview();
+    return;
+  }
   document.getElementById('preview-content').textContent = generateMarkdown();
 }
 
 function toggleSpecSource(mode) {
   const formMode = document.getElementById('spec-form-mode');
   const pasteMode = document.getElementById('spec-paste-mode');
+  const uploadMode = document.getElementById('spec-upload-mode');
+  formMode.style.display = 'none';
+  pasteMode.style.display = 'none';
+  uploadMode.style.display = 'none';
+
   if (mode === 'paste') {
-    formMode.style.display = 'none';
     pasteMode.style.display = 'block';
     syncPastedSpec();
+  } else if (mode === 'upload') {
+    uploadMode.style.display = 'block';
+    syncUploadedMdPreview();
   } else {
     formMode.style.display = 'block';
-    pasteMode.style.display = 'none';
     generatePreview();
   }
 }
@@ -2294,6 +2317,99 @@ function syncPastedSpec() {
   } else {
     document.getElementById('preview-content').textContent = '（請貼上 SPEC 內容）';
   }
+}
+
+// ===================================================================
+// SPEC UPLOAD: Multi-MD File Upload & Merge
+// ===================================================================
+
+let uploadedSpecMdFiles = [];
+
+function handleSpecMdFiles(fileList) {
+  const files = Array.from(fileList);
+  let loaded = 0;
+
+  files.forEach(file => {
+    // Skip duplicates by filename
+    if (uploadedSpecMdFiles.some(f => f.name === file.name)) {
+      loaded++;
+      if (loaded === files.length) {
+        renderSpecMdFileList();
+        syncUploadedMdPreview();
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      uploadedSpecMdFiles.push({
+        name: file.name,
+        content: e.target.result,
+        size: file.size,
+      });
+      loaded++;
+      if (loaded === files.length) {
+        // Sort by filename
+        uploadedSpecMdFiles.sort((a, b) => a.name.localeCompare(b.name));
+        renderSpecMdFileList();
+        syncUploadedMdPreview();
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Reset input so same file can be re-selected
+  document.getElementById('spec-md-input').value = '';
+}
+
+function removeSpecMdFile(index) {
+  uploadedSpecMdFiles.splice(index, 1);
+  renderSpecMdFileList();
+  syncUploadedMdPreview();
+}
+
+function moveSpecMdFile(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= uploadedSpecMdFiles.length) return;
+  const temp = uploadedSpecMdFiles[index];
+  uploadedSpecMdFiles[index] = uploadedSpecMdFiles[newIndex];
+  uploadedSpecMdFiles[newIndex] = temp;
+  renderSpecMdFileList();
+  syncUploadedMdPreview();
+}
+
+function renderSpecMdFileList() {
+  const container = document.getElementById('spec-md-file-list');
+  if (uploadedSpecMdFiles.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = uploadedSpecMdFiles.map((f, i) => {
+    const sizeStr = f.size < 1024 ? f.size + ' B' : (f.size / 1024).toFixed(1) + ' KB';
+    return `
+      <div class="spec-md-file-item">
+        <span class="spec-md-file-order">${i + 1}</span>
+        <span class="spec-md-file-icon">\u{1F4C4}</span>
+        <span class="spec-md-file-name">${escapeHtml(f.name)}</span>
+        <span class="spec-md-file-size">${sizeStr}</span>
+        <div class="spec-md-file-actions">
+          <button onclick="moveSpecMdFile(${i}, -1)" title="\u4E0A\u79FB" ${i === 0 ? 'disabled' : ''}>\u25B2</button>
+          <button onclick="moveSpecMdFile(${i}, 1)" title="\u4E0B\u79FB" ${i === uploadedSpecMdFiles.length - 1 ? 'disabled' : ''}>\u25BC</button>
+          <button onclick="removeSpecMdFile(${i})" title="\u522A\u9664">\u2715</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function syncUploadedMdPreview() {
+  if (uploadedSpecMdFiles.length === 0) {
+    document.getElementById('preview-content').textContent = '\uFF08\u8ACB\u4E0A\u50B3 .md \u6A94\u6848\uFF09';
+    return;
+  }
+  const merged = uploadedSpecMdFiles.map(f => f.content.trim()).join('\n\n---\n\n');
+  document.getElementById('preview-content').textContent = merged;
 }
 
 function copyPreview() {
